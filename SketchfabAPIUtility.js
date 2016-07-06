@@ -120,26 +120,28 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             if (classScope.includeGeometryNodes) {
                 geometryNodeTypeString = "Geometry";
             }
-            if ((node.type == "MatrixTransform" || node.type == geometryNodeTypeString) && (node.name.indexOf(".fbx") === -1) && (node.name !== "RootNode") && node.name != undefined) {
-                node.isVisible = true;
-                if (classScope.nodeHash[node.name] != null) {
-                    //so now we have nodes with the same name and need to convert this storage into an array or push into that array
-                    if (!Array.isArray(classScope.nodeHash[node.name])) {
-                       
-                        var nodeTemp = classScope.nodeHash[node.name];
-                        classScope.nodeHash[node.name] = null;
-                        classScope.nodeHash[node.name] = [];                       
-                        classScope.nodeHash[node.name].push(nodeTemp);
-                        classScope.nodeHash[node.name].push(node);
+            if (node.name != undefined) {
+                if ((node.type == "MatrixTransform" || node.type == geometryNodeTypeString) && (node.name.indexOf(".fbx") === -1) && (node.name.indexOf(".FBX") === -1)  && (node.name !== "RootNode")) {
+                    node.isVisible = true;
+                    if (classScope.nodeHash[node.name] != null) {
+                        //so now we have nodes with the same name and need to convert this storage into an array or push into that array
+                        if (!Array.isArray(classScope.nodeHash[node.name])) {
+
+                            var nodeTemp = classScope.nodeHash[node.name];
+                            classScope.nodeHash[node.name] = null;
+                            classScope.nodeHash[node.name] = [];
+                            classScope.nodeHash[node.name].push(nodeTemp);
+                            classScope.nodeHash[node.name].push(node);
+
+                        } else {
+                            classScope.nodeHash[node.name].push(node);
+                        }
 
                     } else {
-                        classScope.nodeHash[node.name].push(node);
+                        classScope.nodeHash[node.name] = node;
                     }
 
-                } else {
-                    classScope.nodeHash[node.name] = node;
                 }
-
             }
         };
 
