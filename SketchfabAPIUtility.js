@@ -365,7 +365,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     texob.internalFormat = "RGB";
                     texob.magFilter = "LINEAR";
                     texob.minFilter = "LINEAR_MIPMAP_LINEAR";
-                    texob.texCoordUnit = 1;
+                    texob.texCoordUnit = 0;
                     texob.textureTarget = "TEXTURE_2D";
                     texob.uid = 0; // not actual value , the uid still needs to be returned from a succcessful texture upload.
                     texob.wrapS = "REPEAT";
