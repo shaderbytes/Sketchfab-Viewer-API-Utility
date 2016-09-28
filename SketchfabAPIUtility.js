@@ -4,7 +4,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     var classScope = this;
     this.api;
     this.client;
-    this.clientInitObject = {  internal: 1, ui_infos: 0, ui_controls: 0, watermark: 1, continuous_render: 0, supersample: 0 };//These are the default init properies , you can change these if you like. The success and error properties defaults are set later , they should NOT be altered 
+    this.clientInitObject = {  internal:0, ui_infos: 0, ui_controls: 0, watermark: 1, continuous_render: 0, supersample: 0 };//These are the default init properies , you can change these if you like. The success and error properties defaults are set later , they should NOT be altered 
     if (clientInitObjectRef != null) {
         for (var prop in clientInitObjectRef) {
            // if (classScope.clientInitObject[prop] != undefined && classScope.clientInitObject[prop] != null) {
