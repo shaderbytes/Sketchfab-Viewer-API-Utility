@@ -47,7 +47,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.nodePreprocessCompleted = false;
 
     this.create = function () {
-        classScope.client = new Sketchfab('1.0.0', classScope.iframe);
+        classScope.client = new Sketchfab(null, classScope.iframe);
 
         classScope.clientInitObject.success = classScope.onClientInit;
         classScope.clientInitObject.error = classScope.onClientError;
