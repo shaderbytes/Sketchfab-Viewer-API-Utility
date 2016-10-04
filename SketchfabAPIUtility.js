@@ -458,9 +458,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
 
                 }
-                channelObjectRef.color[0] = parseInt(result[1], 16) / 255;
-                channelObjectRef.color[1] = parseInt(result[2], 16) / 255;
-                channelObjectRef.color[2] = parseInt(result[3], 16) / 255;
+                channelObjectRef.color[0] = classScope.srgbToLinear( parseInt(result[1], 16) / 255);
+                channelObjectRef.color[1] = classScope.srgbToLinear(parseInt(result[2], 16) / 255);
+                channelObjectRef.color[2] = classScope.srgbToLinear(parseInt(result[3], 16) / 255);
                 classScope.api.setMaterial(materialObjectRef, function () {
 
                 });
@@ -474,6 +474,30 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.setColor(materialName, channelPropertyName, "", true);
 
     }
+
+
+   this.linearToSrgb = function (c) {
+        var v = 0.0;
+        if (c < 0.0031308) {
+            if (c > 0.0)
+                v = c * 12.92;
+        } else {
+            v = 1.055 * Math.pow(c, 1.0 / gamma) - 0.055;
+        }
+        return v;
+    };
+
+    this.srgbToLinear = function (c) {
+        var v = 0.0;
+        if (c < 0.04045) {
+            if (c >= 0.0)
+                v = c * (1.0 / 12.92);
+        } else {
+            v = Math.pow((c + 0.055) * (1.0 / 1.055), gamma);
+        }
+        return v;
+    };
+
 
     classScope.create();
 
