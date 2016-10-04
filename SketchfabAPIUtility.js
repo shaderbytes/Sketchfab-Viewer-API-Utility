@@ -40,6 +40,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.NormalMap = "NormalMap";
 
     this.textureLoadingCount = 0;
+    this.gamma = 2.4;
     this.textureLoadedCallback;
 
     //preprocessflags
@@ -482,7 +483,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             if (c > 0.0)
                 v = c * 12.92;
         } else {
-            v = 1.055 * Math.pow(c, 1.0 / gamma) - 0.055;
+            v = 1.055 * Math.pow(c, 1.0 / classScope.gamma) - 0.055;
         }
         return v;
     };
@@ -493,7 +494,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             if (c >= 0.0)
                 v = c * (1.0 / 12.92);
         } else {
-            v = Math.pow((c + 0.055) * (1.0 / 1.055), gamma);
+            v = Math.pow((c + 0.055) * (1.0 / 1.055), classScope.gamma);
         }
         return v;
     };
