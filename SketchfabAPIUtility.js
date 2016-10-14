@@ -449,16 +449,27 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 hex = hex.replace(shorthandRegex, function (m, r, g, b) {
                     return r + r + g + g + b + b;
                 });
+
+                var colorObjectExists = false;
+
+                if (channelObjectRef.color == null) {
+                    console.log('no initial color object found on this channel..?? Your call to setColor will now be aborted');
+                    return;
+                } 
+
+
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                 if (channelObjectRef.colorIsCached == undefined) {
+                   
                     channelObjectRef.colorIsCached = true;
                     channelObjectRef.colorCached = [];
                     channelObjectRef.colorCached[0] = channelObjectRef.color[0];
                     channelObjectRef.colorCached[1] = channelObjectRef.color[1];
-                    channelObjectRef.colorCached[2] = channelObjectRef.color[2];
+                    channelObjectRef.colorCached[2] = channelObjectRef.color[2];                   
 
 
                 }
+
                 channelObjectRef.color[0] = classScope.srgbToLinear( parseInt(result[1], 16) / 255);
                 channelObjectRef.color[1] = classScope.srgbToLinear(parseInt(result[2], 16) / 255);
                 channelObjectRef.color[2] = classScope.srgbToLinear(parseInt(result[3], 16) / 255);
