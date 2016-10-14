@@ -96,6 +96,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         };
         if (classScope.enableDebugLogging) {
             console.log("materials listing");
+            console.log(materials);
         }
         for (var i = 0; i < materials.length; i++) {
            
@@ -453,8 +454,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 var colorObjectExists = false;
 
                 if (channelObjectRef.color == null) {
-                    console.log('no initial color object found on this channel..?? Your call to setColor will now be aborted');
-                    return;
+                   
+                    channelObjectRef.color = [1,1,1];
                 } 
 
 
