@@ -43,9 +43,15 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.gamma = 2.4;
     this.textureLoadedCallback;
 
+    this.annotations = [];
+    this.annotationLength = 0;
+    this.currentAnnotationIndex = -1;
+    this.currentAnnotationObject = {};
+
     //preprocessflags
     this.materialPreprocessCompleted = false;
     this.nodePreprocessCompleted = false;
+    this.annotationPreprocessCompleted = false;
 
     this.create = function () {
         classScope.client = new Sketchfab(null, classScope.iframe);
@@ -75,16 +81,19 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         classScope.api.getMaterialList(classScope.generateMaterialHash);
         classScope.api.getNodeMap(classScope.generateNodeHash);
+        classScope.api.getAnnotationList(classScope.generateAnnotationControls);
         //possible other calls here ...
 
        
 
     };
 
+   
+
     this.validateUtilGenerationPreprocess = function () {
 
         //validate all used preprocess flags
-        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted) {
+        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted) {
             classScope.callback();
         }
     }
@@ -164,6 +173,64 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
+    }
+
+
+
+    this.generateAnnotationControls = function (err, annotations) {
+        if (err) {
+            console.log('Error when calling getAnnotationList');
+            return;
+        };
+        if (classScope.enableDebugLogging) {
+            console.log("annotations listing");
+            console.log(annotations);
+        }
+
+        classScope.annotations = annotations;
+        classScope.annotationLength = annotations.length;
+
+        classScope.annotationPreprocessCompleted = true;
+        classScope.validateUtilGenerationPreprocess();
+    }
+
+    this.gotoNextAnnotation = function () {
+        if (classScope.annotationLength == 0) return;
+        classScope.currentAnnotationIndex++;
+        if (classScope.currentAnnotationIndex >= classScope.annotationLength) {
+            classScope.currentAnnotationIndex = 0;
+        }
+        classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
+        classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
+    }
+
+    this.gotoPreviousAnnotation = function () {
+        if (classScope.annotationLength == 0) return;
+        classScope.currentAnnotationIndex--;
+        if (classScope.currentAnnotationIndex < 0) {
+            classScope.currentAnnotationIndex = classScope.annotationLength - 1;
+        }
+        classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
+        classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
+    }
+
+    this.gotoAnnotation = function (index) {
+        if (classScope.annotationLength == 0) return;
+        if (isNaN(index)) {
+            console.error("A call to gotoAnnotation requires you pass in a number for the index");
+            return;
+        }
+
+        //cap the ranges incase they are out of bounds
+        if (index >= classScope.annotationLength) {
+            index = classScope.annotationLength - 1;
+        } else if (index < 0) {
+            index = 0;
+        }
+        classScope.currentAnnotationIndex = index;
+        classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
+        classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
+
     }
 
     this.getNodeObject = function (nodeName,nodeIndex) {
