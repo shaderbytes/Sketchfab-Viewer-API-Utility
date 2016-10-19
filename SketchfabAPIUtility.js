@@ -327,7 +327,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     }
 
-    this.setTexture = function (materialName, channelPropertyName, url, performCacheReset) {
+    this.setTexture = function (materialName, channelPropertyName, url, textureObjectDefaults, performCacheReset) {
         
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
@@ -372,6 +372,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     texob.uid = 0; // not actual value , the uid still needs to be returned from a succcessful texture upload.
                     texob.wrapS = "REPEAT";
                     texob.wrapT = "REPEAT";
+
+                    // default properties for a newly created texture object are not always as coded above
+                    //when needed, pass in an object with any alternate specified properities and they will be used
+                    if (textureObjectDefaults != null) {
+                        for (var prop in textureObjectDefaults) {                           
+                            texob[prop] = textureObjectDefaults[prop];                           
+                        }
+                    }
                 } else {
                     //deep copy
                     for (var prop in channelObjectRef.textureCached) {
@@ -414,7 +422,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     }
 
     this.resetTexture = function (materialName, channelPropertyName) {
-        classScope.setTexture(materialName, channelPropertyName, "", true);
+        classScope.setTexture(materialName, channelPropertyName, "",null, true);
 
     }
 
