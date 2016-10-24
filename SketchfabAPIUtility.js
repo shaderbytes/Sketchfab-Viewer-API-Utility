@@ -39,6 +39,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.SpecularPBR = "SpecularPBR";
     this.NormalMap = "NormalMap";
 
+    this.vectorForward = [0, -1, 0];
+    this.vectorBackward = [0, 1, 0];
+    this.vectorLeft = [-1,0, 0];
+    this.vectorRight = [1, 0, 0];
+    this.vectorUp = [0, 0, 1];
+    this.vectorDown = [0, 0, -1];
+
     this.textureLoadingCount = 0;
     this.gamma = 2.4;
     this.textureLoadedCallback;
@@ -105,7 +112,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         };
         if (classScope.enableDebugLogging) {
             console.log("materials listing");
-            console.log(materials);
+            
         }
         for (var i = 0; i < materials.length; i++) {
            
@@ -124,9 +131,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             console.log('Error when calling getNodeMap');
             return;
         };
-        
+       
         for (var prop in nodes) {
             var node = nodes[prop];
+          
             var geometryNodeTypeString = "I_dont_want_to_be_found";
             if (classScope.includeGeometryNodes) {
                 geometryNodeTypeString = "Geometry";
@@ -174,6 +182,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
     }
+
+   
 
 
 
@@ -256,6 +266,77 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         
         return nodeObjectRef;
     }
+
+    this.lookat = function (nodeName, direction,distance, duration, callback) {
+        var nodeObjectRef = classScope.getNodeObject(nodeName);
+        var nodeObjectRefSingle;
+        if (nodeObjectRef != null) {
+            if (direction == null) {
+                direction = classScope.vectorForward;
+            }
+            if (distance == null) {
+                distance = 10;
+            }
+            if (Array.isArray(nodeObjectRef)) {
+                console.log("multiple nodes returned during call to lookat, first node will be used");
+                nodeObjectRefSingle = nodeObjectRef[0];
+            } else {
+                nodeObjectRefSingle = nodeObjectRef;
+            }
+
+           
+            var target = [nodeObjectRefSingle.worldMatrix[12], nodeObjectRefSingle.worldMatrix[13], nodeObjectRefSingle.worldMatrix[14]];
+            var eye = [target[0] + (direction[0] * distance), target[1] + (direction[1] * distance), target[2] +( direction[2] * distance)];
+            classScope.api.setCameraLookAt(eye, target, duration, callback);
+
+        }
+    }
+
+    this.combineVectorDirections = function () {
+        var directionCombined = [0,0,0];
+        for (i = 0; i < arguments.length; i++) {
+            directionCombined[0] += arguments[i][0];
+            directionCombined[1] += arguments[i][1];
+            directionCombined[2] += arguments[i][2];
+        }
+        return directionCombined;
+    }
+
+    this.translate = function (nodeName, direction,distance, duration, easing, callback) {
+
+        var nodeObjectRef = classScope.getNodeObject(nodeName);
+        var nodeObjectRefSingle;
+        if (nodeObjectRef != null) {
+            if (direction == null) {
+                direction = classScope.vectorForward;
+            }
+            if (distance == null) {
+                distance = 1;
+            }
+            if (Array.isArray(nodeObjectRef)) {
+                console.log("multiple nodes returned during call to lookat, first node will be used");
+                nodeObjectRefSingle = nodeObjectRef[0];
+            } else {
+                nodeObjectRefSingle = nodeObjectRef;
+            }
+            if (nodeObjectRefSingle.worldMatrixisCached = undefined) {
+                nodeObjectRefSingle.worldMatrixisCached = true;
+                nodeObjectRefSingle.worldMatrixCached = nodeObjectRefSingle.worldMatrix;
+            
+            }
+           
+            var currentPosition = [nodeObjectRefSingle.worldMatrix[12], nodeObjectRefSingle.worldMatrix[13], nodeObjectRefSingle.worldMatrix[14]];
+            var newPosition = [currentPosition[0] + (direction[0] * distance), currentPosition[1] + (direction[1] * distance), currentPosition[2] + (direction[2] * distance)];
+            //write new position back into matrix
+            nodeObjectRefSingle.worldMatrix[12] = newPosition[0];
+            nodeObjectRefSingle.worldMatrix[13] = newPosition[1];
+            nodeObjectRefSingle.worldMatrix[14] = newPosition[2];
+            classScope.api.translate(nodeObjectRef.instanceID, newPosition, duration,easing, callback);
+
+        }
+
+    }
+
 
     this.setNodeVisibility = function (nodeName, makeVisible,nodeIndex) {
         var useTogglebehaviour = false;
