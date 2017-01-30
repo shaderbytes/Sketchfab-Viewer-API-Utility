@@ -51,14 +51,22 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.textureLoadedCallback;
 
     this.annotations = [];
+    this.animationClips = {};
     this.annotationLength = 0;
+    this.animationClipsLength = 0;
     this.currentAnnotationIndex = -1;
     this.currentAnnotationObject = {};
+
+    this.currentAnimationObject = {};
+
+    this.animationTimerIntervalID;
+    this.playAnimationClipOnceOnly = false;
 
     //preprocessflags
     this.materialPreprocessCompleted = false;
     this.nodePreprocessCompleted = false;
     this.annotationPreprocessCompleted = false;
+    this.animationPreprocessCompleted = false;
 
     this.create = function () {
         classScope.client = new Sketchfab(null, classScope.iframe);
@@ -74,8 +82,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
 
     this.onClientInit = function (apiRef) {
-        classScope.api = apiRef;
-        classScope.api.start();
+        classScope.api = apiRef;      
         classScope.api.addEventListener('viewerready', classScope.onViewerReady);
     };
 
@@ -89,6 +96,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.api.getMaterialList(classScope.generateMaterialHash);
         classScope.api.getNodeMap(classScope.generateNodeHash);
         classScope.api.getAnnotationList(classScope.generateAnnotationControls);
+        classScope.api.getAnimations(classScope.generateAnimationControls);
         //possible other calls here ...
 
        
@@ -100,10 +108,45 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.validateUtilGenerationPreprocess = function () {
 
         //validate all used preprocess flags
-        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted) {
+        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted && classScope.animationPreprocessCompleted) {
             classScope.callback();
         }
     }
+
+    this.generateAnimationControls = function (err, animations) {
+        if (err) {
+            console.log('Error when calling getAnimations');
+            return;
+        };
+        if (classScope.enableDebugLogging) {
+            console.log("animation listing");
+            console.log(animations);
+        }
+
+        for (var i = 0; i < animations.length; i++) {
+
+            var ob = classScope.animationClips[animations[i][1]] = {};
+            ob.name = animations[i][1]
+            ob.uid = animations[i][0];
+            ob.length = animations[i][2];
+           
+        };       
+        classScope.animationClipsLength = animations.length;
+
+        classScope.animationPreprocessCompleted = true;
+        classScope.validateUtilGenerationPreprocess();
+    }
+
+    this.getAnimationObject = function (key) {
+        var dataObjectRef = classScope.animationClips[key];
+        if (dataObjectRef == null) {
+            console.error('a call to  getAnimationObject using key/name ' + key + ' has failed , no such object found');
+            return null;
+        }
+        return dataObjectRef;
+    }
+   
+    
 
     this.generateMaterialHash = function (err, materials) {
         if (err) {
@@ -243,20 +286,20 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     }
 
-    this.getNodeObject = function (nodeName,nodeIndex) {
-        var nodeObjectRef = classScope.nodeHash[nodeName];
-        if (nodeObjectRef == null) {
-            console.error('a call to  getNodeObject using node name ' + nodeName + ' has failed , no such node found');
+    this.getNodeObject = function (key,nodeIndex) {
+        var dataObjectRef = classScope.nodeHash[key];
+        if (dataObjectRef == null) {
+            console.error('a call to  getNodeObject using node name ' + key + ' has failed , no such node found');
             return null;
         }
 
         if (nodeIndex != null) {
-            if (Array.isArray(nodeObjectRef)) {
-                if (nodeIndex < 0 || nodeIndex >= nodeObjectRef.length) {
-                    console.error('a call to  getNodeObject using node name ' + nodeName + ' has failed , the nodeIndex is out of range. You can pass an array index ranging : 0 - ' + (nodeObjectRef.length - 1));
+            if (Array.isArray(dataObjectRef)) {
+                if (nodeIndex < 0 || nodeIndex >= dataObjectRef.length) {
+                    console.error('a call to  getNodeObject using node name ' + key + ' has failed , the nodeIndex is out of range. You can pass an array index ranging : 0 - ' + (dataObjectRef.length - 1));
                     return;
                 } else {
-                    nodeObjectRef = nodeObjectRef[nodeIndex];
+                    dataObjectRef = dataObjectRef[nodeIndex];
                 }
             }
         }
@@ -264,28 +307,28 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         // take note the returned object could be a direct reference to the node object if it is unique , or it returns an array of node objects if they share the same name
         //or it could be a direct refrence to the node object within the array if you passed in a nodeIndex and the name is mapped to an array
         
-        return nodeObjectRef;
+        return dataObjectRef;
     }
 
-    this.lookat = function (nodeName, direction,distance, duration, callback) {
-        var nodeObjectRef = classScope.getNodeObject(nodeName);
-        var nodeObjectRefSingle;
-        if (nodeObjectRef != null) {
+    this.lookat = function (key, direction,distance, duration, callback) {
+        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRefSingle;
+        if (dataObjectRef != null) {
             if (direction == null) {
                 direction = classScope.vectorForward;
             }
             if (distance == null) {
                 distance = 10;
             }
-            if (Array.isArray(nodeObjectRef)) {
+            if (Array.isArray(dataObjectRef)) {
                 console.log("multiple nodes returned during call to lookat, first node will be used");
-                nodeObjectRefSingle = nodeObjectRef[0];
+                dataObjectRefSingle = dataObjectRef[0];
             } else {
-                nodeObjectRefSingle = nodeObjectRef;
+                dataObjectRefSingle = dataObjectRef;
             }
 
            
-            var target = [nodeObjectRefSingle.worldMatrix[12], nodeObjectRefSingle.worldMatrix[13], nodeObjectRefSingle.worldMatrix[14]];
+            var target = [dataObjectRefSingle.worldMatrix[12], dataObjectRefSingle.worldMatrix[13], dataObjectRefSingle.worldMatrix[14]];
             var eye = [target[0] + (direction[0] * distance), target[1] + (direction[1] * distance), target[2] +( direction[2] * distance)];
             classScope.api.setCameraLookAt(eye, target, duration, callback);
 
@@ -302,97 +345,97 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         return directionCombined;
     }
 
-    this.translate = function (nodeName, direction,distance, duration, easing, callback) {
+    this.translate = function (key, direction,distance, duration, easing, callback) {
 
-        var nodeObjectRef = classScope.getNodeObject(nodeName);
-        var nodeObjectRefSingle;
-        if (nodeObjectRef != null) {
+        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRefSingle;
+        if (dataObjectRef != null) {
             if (direction == null) {
                 direction = classScope.vectorForward;
             }
             if (distance == null) {
                 distance = 1;
             }
-            if (Array.isArray(nodeObjectRef)) {
+            if (Array.isArray(dataObjectRef)) {
                 console.log("multiple nodes returned during call to lookat, first node will be used");
-                nodeObjectRefSingle = nodeObjectRef[0];
+                dataObjectRefSingle = dataObjectRef[0];
             } else {
-                nodeObjectRefSingle = nodeObjectRef;
+                dataObjectRefSingle = dataObjectRef;
             }
-            if (nodeObjectRefSingle.worldMatrixisCached = undefined) {
-                nodeObjectRefSingle.worldMatrixisCached = true;
-                nodeObjectRefSingle.worldMatrixCached = nodeObjectRefSingle.worldMatrix;
+            if (dataObjectRefSingle.worldMatrixisCached = undefined) {
+                dataObjectRefSingle.worldMatrixisCached = true;
+                dataObjectRefSingle.worldMatrixCached = dataObjectRefSingle.worldMatrix;
             
             }
            
-            var currentPosition = [nodeObjectRefSingle.worldMatrix[12], nodeObjectRefSingle.worldMatrix[13], nodeObjectRefSingle.worldMatrix[14]];
+            var currentPosition = [dataObjectRefSingle.worldMatrix[12], dataObjectRefSingle.worldMatrix[13], dataObjectRefSingle.worldMatrix[14]];
             var newPosition = [currentPosition[0] + (direction[0] * distance), currentPosition[1] + (direction[1] * distance), currentPosition[2] + (direction[2] * distance)];
             //write new position back into matrix
-            nodeObjectRefSingle.worldMatrix[12] = newPosition[0];
-            nodeObjectRefSingle.worldMatrix[13] = newPosition[1];
-            nodeObjectRefSingle.worldMatrix[14] = newPosition[2];
-            classScope.api.translate(nodeObjectRef.instanceID, newPosition, duration,easing, callback);
+            dataObjectRefSingle.worldMatrix[12] = newPosition[0];
+            dataObjectRefSingle.worldMatrix[13] = newPosition[1];
+            dataObjectRefSingle.worldMatrix[14] = newPosition[2];
+            classScope.api.translate(dataObjectRef.instanceID, newPosition, duration,easing, callback);
 
         }
 
     }
 
 
-    this.setNodeVisibility = function (nodeName, makeVisible,nodeIndex) {
+    this.setNodeVisibility = function (key, makeVisible,nodeIndex) {
         var useTogglebehaviour = false;
         if (makeVisible == null) {
             useTogglebehaviour = true;
         }
-        var nodeObjectRef = classScope.getNodeObject(nodeName);
-        var nodeObjectRefSingle;
+        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRefSingle;
         var loopArray = false;
-        if (nodeObjectRef != null) {
+        if (dataObjectRef != null) {
 
-            if (Array.isArray(nodeObjectRef)) {
+            if (Array.isArray(dataObjectRef)) {
                 if (nodeIndex == null) {
                     loopArray = true;
-                    nodeObjectRefSingle = nodeObjectRef[0];
-                } else if (nodeIndex < 0 || nodeIndex >= nodeObjectRef.length) {
-                    console.error('a call to  setNodeVisibility using node name ' + nodeName + ' has failed , this name is mapped to multiple objects and requires you to pass an array index ranging : 0 - ' + (nodeObjectRef.length - 1));
+                    dataObjectRefSingle = dataObjectRef[0];
+                } else if (nodeIndex < 0 || nodeIndex >= dataObjectRef.length) {
+                    console.error('a call to  setNodeVisibility using node name ' + key + ' has failed , this name is mapped to multiple objects and requires you to pass an array index ranging : 0 - ' + (dataObjectRef.length - 1));
                     return;
                 } else {
-                    nodeObjectRefSingle = nodeObjectRef[nodeIndex];
+                    dataObjectRefSingle = dataObjectRef[nodeIndex];
                 }
             } else {
-                nodeObjectRefSingle = nodeObjectRef;
+                dataObjectRefSingle = dataObjectRef;
             }
 
             if (useTogglebehaviour) {
-                nodeObjectRefSingle.isVisible = !nodeObjectRefSingle.isVisible;
-                makeVisible = nodeObjectRefSingle.isVisible;
+                dataObjectRefSingle.isVisible = !dataObjectRefSingle.isVisible;
+                makeVisible = dataObjectRefSingle.isVisible;
             }
-            nodeObjectRefSingle.isVisible = makeVisible;
+            dataObjectRefSingle.isVisible = makeVisible;
             if (loopArray) {
-                for (var i = 1; i < nodeObjectRef.length; i++) {
-                    nodeObjectRef[i].isVisible = makeVisible;
+                for (var i = 1; i < dataObjectRef.length; i++) {
+                    dataObjectRef[i].isVisible = makeVisible;
                 }
             }
 
             if (makeVisible) {               
-                classScope.api.show(nodeObjectRefSingle.instanceID);
+                classScope.api.show(dataObjectRefSingle.instanceID);
                 if (loopArray) {
-                    for (var i = 1; i < nodeObjectRef.length; i++) {
-                        classScope.api.show(nodeObjectRef[i].instanceID);
+                    for (var i = 1; i < dataObjectRef.length; i++) {
+                        classScope.api.show(dataObjectRef[i].instanceID);
                     }
                 }
             } else {
-                classScope.api.hide(nodeObjectRefSingle.instanceID);
+                classScope.api.hide(dataObjectRefSingle.instanceID);
                 if (loopArray) {
-                    for (var i = 1; i < nodeObjectRef.length; i++) {
-                        classScope.api.hide(nodeObjectRef[i].instanceID);
+                    for (var i = 1; i < dataObjectRef.length; i++) {
+                        classScope.api.hide(dataObjectRef[i].instanceID);
                     }
                 }
             }
         }
     }
 
-    this.toggleNodeVisibility = function (nodeName,nodeIndex) {
-        classScope.setNodeVisibility(nodeName, null, nodeIndex);
+    this.toggleNodeVisibility = function (key,nodeIndex) {
+        classScope.setNodeVisibility(key, null, nodeIndex);
     }
 
     this.getMaterialObject = function (materialName) {
@@ -666,6 +709,63 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         }
         return v;
     };
+
+
+
+    //---------------------animation code .. bugs in sketchfabs api so have removed for now
+
+    /*
+   this.PlayAnimationClip = function (key, _playOnceOnly) {
+       //clear any possible intervals
+       clearInterval(classScope.animationTimerIntervalID);
+
+
+       classScope.playAnimationClipOnceOnly = _playOnceOnly || false;
+       var dataObjectRef = classScope.getAnimationObject(key);
+       
+       if (dataObjectRef != null) {
+           classScope.currentAnimationObject = dataObjectRef;
+           classScope.api.setCurrentAnimationByUID(dataObjectRef.uid,classScope.OnSetAnimationClip);
+       }
+      
+      
+   }
+
+   this.OnSetAnimationClip = function (err) {
+       console.log("OnSetAnimationClip " + classScope.currentAnimationObject.name);
+       classScope.api.play(classScope.OnPlayAnimationClip);
+      // classScope.api.seekTo(0);
+       
+   }
+
+   this.OnPlayAnimationClip = function (err) {
+       console.log("OnPlayAnimationClip " + classScope.currentAnimationObject.name);
+        classScope.api.seekTo(0,classScope.OnSeekAnimationClip);
+      
+      
+   }
+
+   this.OnSeekAnimationClip = function () {
+       console.log("OnSeekAnimationClip " + classScope.currentAnimationObject.name);
+       if (classScope.playAnimationClipOnceOnly) {
+           classScope.animationTimerIntervalID = setInterval(classScope.animationTimerInterval, 10);
+       }
+   }
+
+   this.animationTimerInterval = function(){
+       classScope.api.getCurrentTime(function (err, time) {
+           console.log(time + " | " + classScope.currentAnimationObject.length);
+           if(time>= classScope.currentAnimationObject.length-0.05){
+               clearInterval(classScope.animationTimerIntervalID);
+               classScope.api.seekTo(classScope.currentAnimationObject.length - 0.05);
+               classScope.api.pause();
+              
+               
+           }
+       } );
+      
+   }
+   */
 
 
     classScope.create();
