@@ -82,7 +82,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
 
     this.onClientInit = function (apiRef) {
-        classScope.api = apiRef;      
+        classScope.api = apiRef;
+        classScope.api.start();
         classScope.api.addEventListener('viewerready', classScope.onViewerReady);
     };
 
