@@ -4,12 +4,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     var classScope = this;
     this.api;
     this.client;
-    this.clientInitObject = { };//These are the default init properies , you can change these if you like. The success and error properties defaults are set later , they should NOT be altered 
+    this.clientInitObject = { };//if you want any default init options hard coded just add them here
     if (clientInitObjectRef != null) {
-        for (var prop in clientInitObjectRef) {
-           // if (classScope.clientInitObject[prop] != undefined && classScope.clientInitObject[prop] != null) {
-                classScope.clientInitObject[prop] = clientInitObjectRef[prop];
-           // }
+        for (var prop in clientInitObjectRef) {       
+            classScope.clientInitObject[prop] = clientInitObjectRef[prop];
+          
         }
     }
     this.iframe = iframeRef;
@@ -69,6 +68,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.animationPreprocessCompleted = false;
 
     this.create = function () {
+       
         classScope.client = new Sketchfab('1.0.0', classScope.iframe);
 
         classScope.clientInitObject.success = classScope.onClientInit;
@@ -82,18 +82,18 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
 
     this.onClientInit = function (apiRef) {
-        classScope.api = apiRef;
-        classScope.api.start();
+       
+        classScope.api = apiRef;      
         classScope.api.addEventListener('viewerready', classScope.onViewerReady);
+        classScope.api.start();
     };
 
     this.onViewerReady = function () {
-
+       
         //prepare data for ease of use
 
         //for each call into the api that gets used for preprocesing a flag should be created which can be validated to decide that the 
-        //utility has finished all preprocessing
-
+        //utility has finished all preprocessing       
         classScope.api.getMaterialList(classScope.generateMaterialHash);
         classScope.api.getNodeMap(classScope.generateNodeHash);
         classScope.api.getAnnotationList(classScope.generateAnnotationControls);
@@ -313,6 +313,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     this.lookat = function (key, direction,distance, duration, callback) {
         var dataObjectRef = classScope.getNodeObject(key);
+        
         var dataObjectRefSingle;
         if (dataObjectRef != null) {
             if (direction == null) {
