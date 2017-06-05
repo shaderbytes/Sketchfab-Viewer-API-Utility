@@ -243,6 +243,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         classScope.annotations = annotations;
         classScope.annotationLength = annotations.length;
+        for (var i = 0; i < annotations.length; i++) {
+            classScope.annotations[i].description = classScope.annotations[i].content.raw || "";
+        }
 
         classScope.annotationPreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
