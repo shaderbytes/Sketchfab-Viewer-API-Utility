@@ -15,6 +15,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.urlID = urlIDRef;
     this.materialHash = {};
     this.nodeHash = {};
+    this.nodesRaw;
+    this.rootTransform;
     this.includeGeometryNodes = false;
     this.enableDebugLogging = true;
     this.callback = callbackRef;
@@ -175,10 +177,17 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             console.log('Error when calling getNodeMap');
             return;
         };
-       
+        classScope.nodesRaw = nodes;
+        console.log(nodes);
+        var firstRootTransformFound = false;
         for (var prop in nodes) {
             var node = nodes[prop];
-          
+            if (!firstRootTransformFound) {
+                if (node.type == "MatrixTransform") {
+                    firstRootTransformFound = true;
+                    classScope.rootTransform = node;
+                }           
+            }
             var geometryNodeTypeString = "I_dont_want_to_be_found";
             if (classScope.includeGeometryNodes) {
                 geometryNodeTypeString = "Geometry";
