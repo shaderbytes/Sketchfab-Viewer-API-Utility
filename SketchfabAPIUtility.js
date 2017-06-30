@@ -11,13 +11,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
           
         }
     }
+    this.isInitialized = false;
     this.iframe = iframeRef;
     this.urlID = urlIDRef;
     this.materialHash = {};
+    //node hash stores matrix transform nodes by name
     this.nodeHash = {};
-    this.nodesRaw;
-    this.rootTransform;
-    this.includeGeometryNodes = false;
+    //stores reference to matrix transform nodes via ID. 
+    this.nodeHashIDMap = {};
+    this.eventListeners = {};
+    this.nodesRaw;  
     this.enableDebugLogging = true;
     this.callback = callbackRef;
     //materialChannelProperties
@@ -112,6 +115,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         //validate all used preprocess flags
         if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted && classScope.animationPreprocessCompleted) {
+            classScope.isInitialized = true;
             classScope.callback();
         }
     }
@@ -171,6 +175,47 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.validateUtilGenerationPreprocess();
     }
 
+    this.addEventListener = function(event,func){
+        if (classScope.eventListeners[event] == null) {
+            classScope.eventListeners[event] = [];
+            if (event == "click") {
+                if (classScope.isInitialized) {
+                    classScope.api.addEventListener("click", classScope.onClick);
+                } else {
+                    console.log("a call to add a click event listener has been rejected because this utility has not completed initialization");
+                    return;
+                }
+            }
+        }
+        classScope.eventListeners[event].push(func);
+    }
+
+    this.removeEventListener = function (event, func) {
+        if (classScope.eventListeners[event] != null) {
+            for (var i = classScope.eventListeners[event].length-1; i >= 0; i--) {
+                if (classScope.eventListeners[event][i] == func) {
+                    classScope.eventListeners[event][i].splice(i, 1);
+                }
+            }
+            if (classScope.eventListeners[event].length == 0) {
+                classScope.eventListeners[event] = null;
+                if (event == "click") {
+                    classScope.api.removeEventListener("click", classScope.onClick);
+                }
+            }
+
+        }
+    }
+
+
+    this.onClick = function (e) {
+        var node = classScope.getNodeObject(e.instanceID);
+        e.node = node;
+        for (var i = 0; i < classScope.eventListeners["click"].length; i++) {
+            classScope.eventListeners["click"][i](e);
+        }
+    }
+
     this.generateNodeHash = function (err, nodes) {
        
         if (err) {
@@ -178,22 +223,18 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             return;
         };
         classScope.nodesRaw = nodes;
-        console.log(nodes);
-        var firstRootTransformFound = false;
+        var currentNodeName = "";
         for (var prop in nodes) {
-            var node = nodes[prop];
-            if (!firstRootTransformFound) {
-                if (node.type == "MatrixTransform") {
-                    firstRootTransformFound = true;
-                    classScope.rootTransform = node;
-                }           
-            }
-            var geometryNodeTypeString = "I_dont_want_to_be_found";
-            if (classScope.includeGeometryNodes) {
-                geometryNodeTypeString = "Geometry";
-            }
+            var node = nodes[prop];            
+           
             if (node.name != undefined) {
-                if ((node.type == "MatrixTransform" || node.type == geometryNodeTypeString) && (node.name.indexOf(".fbx") === -1) && (node.name.indexOf(".FBX") === -1)  && (node.name !== "RootNode")) {
+                if ((node.type == "MatrixTransform" || node.type == "Geometry") && (node.name.indexOf(".fbx") === -1) && (node.name.indexOf(".FBX") === -1) && (node.name !== "RootNode")) {
+                    if (node.type == "Geometry") {
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
+                        continue;
+                    } else {
+                        currentNodeName = node.name;
+                    }
                     node.isVisible = true;
                     if (classScope.nodeHash[node.name] != null) {
                         //so now we have nodes with the same name and need to convert this storage into an array or push into that array
@@ -204,13 +245,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                             classScope.nodeHash[node.name] = [];
                             classScope.nodeHash[node.name].push(nodeTemp);
                             classScope.nodeHash[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
 
                         } else {
                             classScope.nodeHash[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
                         }
 
                     } else {
                         classScope.nodeHash[node.name] = node;
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
                     }
 
                 }
@@ -298,9 +342,15 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
 
     }
-
-    this.getNodeObject = function (key,nodeIndex) {
-        var dataObjectRef = classScope.nodeHash[key];
+    // key can be a name or an instance id. Also remember instance id's of geometry nodes are mapped to their relevant root matrix transform node
+    this.getNodeObject = function (key, nodeIndex) {
+        var dataObjectRef;
+        if (typeof key === 'string' || key instanceof String) {
+            dataObjectRef = classScope.nodeHash[key];
+        } else {
+            dataObjectRef = classScope.nodeHashIDMap[key];
+        }
+       
         if (dataObjectRef == null) {
             console.error('a call to  getNodeObject using node name ' + key + ' has failed , no such node found');
             return null;
@@ -613,12 +663,18 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
                 }
 
-                classScope.api.addTexture(url, addTextureCallback);
-                classScope.textureLoadingCount++;
-                if(classScope.textureLoadedCallback != null){
-                    classScope.textureLoadedCallback(classScope.textureLoadingCount);
+                if (url == null) {
+                    channelObjectRef.texture = null;
+                    delete channelObjectRef.texture;
+                    classScope.api.setMaterial(materialObjectRef);
+                } else {
+                    classScope.api.addTexture(url, addTextureCallback);
+                    classScope.textureLoadingCount++;
+                    if (classScope.textureLoadedCallback != null) {
+                        classScope.textureLoadedCallback(classScope.textureLoadingCount);
 
-                }               
+                    }
+                }
 
             }
         }
