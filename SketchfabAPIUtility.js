@@ -17,11 +17,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.materialHash = {};
     //node hash stores matrix transform nodes by name
     this.nodeHash = {};
-    //stores reference to matrix transform nodes via ID. 
+    //node hash stores group nodes by name
+    this.nodeHashGroup = {};
+    //stores reference to matrix transform nodes or group nodes via ID. 
     this.nodeHashIDMap = {};
     this.eventListeners = {};
     this.nodesRaw;  
-    this.enableDebugLogging = true;
+    this.enableDebugLogging = false;
     this.callback = callbackRef;
     //materialChannelProperties
     this.AOPBR = "AOPBR";
@@ -100,7 +102,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         //for each call into the api that gets used for preprocesing a flag should be created which can be validated to decide that the 
         //utility has finished all preprocessing       
         classScope.api.getMaterialList(classScope.generateMaterialHash);
-        classScope.api.getNodeMap(classScope.generateNodeHash);
+        classScope.api.getNodeMap(classScope.generateNodeHash);       
         classScope.api.getAnnotationList(classScope.generateAnnotationControls);
         classScope.api.getAnimations(classScope.generateAnimationControls);
         //possible other calls here ...
@@ -153,7 +155,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         return dataObjectRef;
     }
    
-    
+   
 
     this.generateMaterialHash = function (err, materials) {
         if (err) {
@@ -215,6 +217,22 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             classScope.eventListeners["click"][i](e);
         }
     }
+    this.validateifGroupeExists = function (nodes, name) {
+      
+        for(var i=0;i<nodes.length;i++){
+            if (nodes[i].type == "Group") {
+                if (nodes[i].name == name) {
+                    return true;
+                   
+                    break;
+                }
+            }
+        }
+            
+        return false;
+
+    }
+   
 
     this.generateNodeHash = function (err, nodes) {
        
@@ -223,17 +241,32 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             return;
         };
         classScope.nodesRaw = nodes;
+       
+
         var currentNodeName = "";
+        var currentNodeNameGroup = "";
         for (var prop in nodes) {
             var node = nodes[prop];            
            
             if (node.name != undefined) {
-                if ((node.type == "MatrixTransform" || node.type == "Geometry") && (node.name.indexOf(".fbx") === -1) && (node.name.indexOf(".FBX") === -1) && (node.name !== "RootNode")) {
+                if ((node.name.toLowerCase().indexOf(".fbx") != -1) || (node.name.toLowerCase().indexOf("rootmodel") != -1) || (node.name.toLowerCase().indexOf("rootnode") != -1) || (node.name.toLowerCase().indexOf("polygonnode") != -1)) {
+                    continue;
+                }
+                if ((node.type == "MatrixTransform" || node.type == "Geometry") ) {
                     if (node.type == "Geometry") {
                         classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
                         continue;
                     } else {
-                        currentNodeName = node.name;
+                        if (node.children.length == 0) {
+                            continue;
+                        }
+                        
+                        if (!classScope.validateifGroupeExists(nodes, node.name)) {
+
+                            currentNodeName = node.name;
+                        } else {
+                            continue;
+                        }
                     }
                     node.isVisible = true;
                     if (classScope.nodeHash[node.name] != null) {
@@ -258,11 +291,48 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     }
 
                 }
+                if ((node.type == "Group" || node.type == "RigGeometry")) {
+                    if (node.type == "RigGeometry") {
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
+                        continue;
+                    } else {
+                        if (node.children.length == 0) {
+                            continue;
+                        }
+                        currentNodeNameGroup = node.name;
+                    }
+                    node.isVisible = true;
+                    if (classScope.nodeHashGroup[node.name] != null) {
+                        //so now we have nodes with the same name and need to convert this storage into an array or push into that array
+                        if (!Array.isArray(classScope.nodeHashGroup[node.name])) {
+
+                            var nodeTemp = classScope.nodeHashGroup[node.name];
+                            classScope.nodeHashGroup[node.name] = null;
+                            classScope.nodeHashGroup[node.name] = [];
+                            classScope.nodeHashGroup[node.name].push(nodeTemp);
+                            classScope.nodeHashGroup[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
+
+                        } else {
+                            classScope.nodeHashGroup[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
+                        }
+
+                    } else {
+                        classScope.nodeHashGroup[node.name] = node;
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
+                    }
+
+                }
+
+
+
             }
         };
 
         if (classScope.enableDebugLogging) {
-            console.log("nodes listing");
+            console.log(" ");
+            console.log("nodes listing matrix transforms");
             for (var key in classScope.nodeHash) {
                 if (Array.isArray(classScope.nodeHash[key])) {
                     console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ")
@@ -272,6 +342,19 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 } else {
                     console.log("unique node name, use only name to retrieve: ");
                     console.log("name: " + classScope.nodeHash[key].name);
+                }
+            }
+            console.log(" ");
+            console.log("nodes listing groups");
+            for (var key in classScope.nodeHashGroup) {
+                if (Array.isArray(classScope.nodeHashGroup[key])) {
+                    console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ")
+                    for (var i = 0; i < classScope.nodeHashGroup[key].length; i++) {
+                        console.log("name: " + classScope.nodeHashGroup[key][i].name + " index: " + i);
+                    }
+                } else {
+                    console.log("unique node name, use only name to retrieve: ");
+                    console.log("name: " + classScope.nodeHashGroup[key].name);
                 }
             }
         }
@@ -345,12 +428,24 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     // key can be a name or an instance id. Also remember instance id's of geometry nodes are mapped to their relevant root matrix transform node
     this.getNodeObject = function (key, nodeIndex) {
         var dataObjectRef;
+      
         if (typeof key === 'string' || key instanceof String) {
+            //priority search : first matrix transforms will be tested
             dataObjectRef = classScope.nodeHash[key];
+           
+            //priority search 2 : now i first lookup f needed group nodes will be tested
+            if (dataObjectRef == null || typeof dataObjectRef != 'undefined') {
+               
+             
+                dataObjectRef = classScope.nodeHashGroup[key];
+            } else {
+             
+            };
         } else {
             dataObjectRef = classScope.nodeHashIDMap[key];
         }
-       
+                
+        
         if (dataObjectRef == null) {
             console.error('a call to  getNodeObject using node name ' + key + ' has failed , no such node found');
             return null;
@@ -479,7 +574,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     dataObjectRef[i].isVisible = makeVisible;
                 }
             }
-
+            
             if (makeVisible) {               
                 classScope.api.show(dataObjectRefSingle.instanceID);
                 if (loopArray) {
