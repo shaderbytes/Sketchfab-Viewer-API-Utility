@@ -17,13 +17,23 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.materialHash = {};
     //node hash stores matrix transform nodes by name
     this.nodeHash = {};
-    //node hash stores group nodes by name
-    this.nodeHashGroup = {};
-    //stores reference to matrix transform nodes or group nodes via ID. 
+    
+
+    this.nodeTypeMatrixtransform = "MatrixTransform";
+    this.nodeTypeCurrent = classScope.nodeTypeMatrixtransform;
+    this.nodeTypeGeometry = "Geometry";
+    this.nodeTypeGroup = "Group";
+    this.nodeTypeRigGeometry = "RigGeometry";
+
+    classScope.nodeHash[classScope.nodeTypeMatrixtransform] = {};
+classScope.nodeHash[classScope.nodeTypeGeometry] = {};
+classScope.nodeHash[classScope.nodeTypeGroup] = {};
+classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
+
     this.nodeHashIDMap = {};
     this.eventListeners = {};
     this.nodesRaw;  
-    this.enableDebugLogging = false;
+    this.enableDebugLogging = true;
     this.callback = callbackRef;
     //materialChannelProperties
     this.AOPBR = "AOPBR";
@@ -217,21 +227,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             classScope.eventListeners["click"][i](e);
         }
     }
-    this.validateifGroupeExists = function (nodes, name) {
-      
-        for(var i=0;i<nodes.length;i++){
-            if (nodes[i].type == "Group") {
-                if (nodes[i].name == name) {
-                    return true;
-                   
-                    break;
-                }
-            }
-        }
-            
-        return false;
-
-    }
+    
    
 
     this.generateNodeHash = function (err, nodes) {
@@ -244,7 +240,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
        
 
         var currentNodeName = "";
-        var currentNodeNameGroup = "";
+        var a = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
+       
         for (var prop in nodes) {
             var node = nodes[prop];            
            
@@ -252,111 +249,73 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 if ((node.name.toLowerCase().indexOf(".fbx") != -1) || (node.name.toLowerCase().indexOf("rootmodel") != -1) || (node.name.toLowerCase().indexOf("rootnode") != -1) || (node.name.toLowerCase().indexOf("polygonnode") != -1)) {
                     continue;
                 }
-                if ((node.type == "MatrixTransform" || node.type == "Geometry") ) {
-                    if (node.type == "Geometry") {
-                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
-                        continue;
-                    } else {
-                        if (node.children.length == 0) {
-                            continue;
-                        }
-                        
-                        if (!classScope.validateifGroupeExists(nodes, node.name)) {
-
-                            currentNodeName = node.name;
-                        } else {
-                            continue;
-                        }
+                for (var k = 0; k < a.length; k++) {
+                    if (node.type != a[k]) {
+                        continue
                     }
+                    classScope.nodeTypeCurrent = a[k];             
+                    var n = classScope.nodeHash[classScope.nodeTypeCurrent];
+                   
+                    if (node.type == classScope.nodeTypeGeometry || node.type == classScope.nodeTypeRigGeometry) {
+                        classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
+                                           
+                        break;
+                    }
+
+                    
+                    if (node.children.length == 0) {
+                       
+                        break;
+                    }
+                    
+                    
+                    currentNodeName = node.name;
                     node.isVisible = true;
-                    if (classScope.nodeHash[node.name] != null) {
+                   
+                    if (n[node.name] != null) {
                         //so now we have nodes with the same name and need to convert this storage into an array or push into that array
-                        if (!Array.isArray(classScope.nodeHash[node.name])) {
+                        if (!Array.isArray(n[node.name])) {
 
-                            var nodeTemp = classScope.nodeHash[node.name];
-                            classScope.nodeHash[node.name] = null;
-                            classScope.nodeHash[node.name] = [];
-                            classScope.nodeHash[node.name].push(nodeTemp);
-                            classScope.nodeHash[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
+                            var nodeTemp = n[node.name];
+                            n[node.name] = null;
+                            n[node.name] = [];
+                            n[node.name].push(nodeTemp);
+                            n[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
 
                         } else {
-                            classScope.nodeHash[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
+                            n[node.name].push(node);
+                            classScope.nodeHashIDMap[node.instanceID] =n[currentNodeName];
                         }
 
                     } else {
-                        classScope.nodeHash[node.name] = node;
-                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeName];
+                        n[node.name] = node;
+                        classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
                     }
+                   
 
                 }
-                if ((node.type == "Group" || node.type == "RigGeometry")) {
-                    if (node.type == "RigGeometry") {
-                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
-                        continue;
-                    } else {
-                        if (node.children.length == 0) {
-                            continue;
-                        }
-                        currentNodeNameGroup = node.name;
-                    }
-                    node.isVisible = true;
-                    if (classScope.nodeHashGroup[node.name] != null) {
-                        //so now we have nodes with the same name and need to convert this storage into an array or push into that array
-                        if (!Array.isArray(classScope.nodeHashGroup[node.name])) {
-
-                            var nodeTemp = classScope.nodeHashGroup[node.name];
-                            classScope.nodeHashGroup[node.name] = null;
-                            classScope.nodeHashGroup[node.name] = [];
-                            classScope.nodeHashGroup[node.name].push(nodeTemp);
-                            classScope.nodeHashGroup[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
-
-                        } else {
-                            classScope.nodeHashGroup[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
-                        }
-
-                    } else {
-                        classScope.nodeHashGroup[node.name] = node;
-                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHashGroup[currentNodeNameGroup];
-                    }
-
-                }
-
-
-
             }
         };
 
         if (classScope.enableDebugLogging) {
-            console.log(" ");
-            console.log("nodes listing matrix transforms");
-            for (var key in classScope.nodeHash) {
-                if (Array.isArray(classScope.nodeHash[key])) {
-                    console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ")
-                    for (var i = 0; i < classScope.nodeHash[key].length; i++) {
-                        console.log("name: " + classScope.nodeHash[key][i].name + " index: " + i);
+            for (var k = 0; k < a.length; k++) {
+                console.log(" ");
+                console.log("nodes listing " + a[k]);
+                var n = classScope.nodeHash[a[k]];
+                for (var key in n) {
+                    if (Array.isArray(n[key])) {
+                        console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ")
+                        for (var i = 0; i < n[key].length; i++) {
+                            console.log("name: " + n[key][i].name + " index: " + i);
+                        }
+                    } else {
+                        console.log("unique node name, use only name to retrieve: ");
+                        console.log("name: " + n[key].name);
                     }
-                } else {
-                    console.log("unique node name, use only name to retrieve: ");
-                    console.log("name: " + classScope.nodeHash[key].name);
                 }
             }
-            console.log(" ");
-            console.log("nodes listing groups");
-            for (var key in classScope.nodeHashGroup) {
-                if (Array.isArray(classScope.nodeHashGroup[key])) {
-                    console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ")
-                    for (var i = 0; i < classScope.nodeHashGroup[key].length; i++) {
-                        console.log("name: " + classScope.nodeHashGroup[key][i].name + " index: " + i);
-                    }
-                } else {
-                    console.log("unique node name, use only name to retrieve: ");
-                    console.log("name: " + classScope.nodeHashGroup[key].name);
-                }
-            }
+           
         }
 
         classScope.nodePreprocessCompleted = true;
@@ -426,28 +385,20 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     }
     // key can be a name or an instance id. Also remember instance id's of geometry nodes are mapped to their relevant root matrix transform node
-    this.getNodeObject = function (key, nodeIndex) {
+    this.getNodeObject = function (key, nodeIndex,currentNodeType) {
         var dataObjectRef;
-      
-        if (typeof key === 'string' || key instanceof String) {
-            //priority search : first matrix transforms will be tested
-            dataObjectRef = classScope.nodeHash[key];
-           
-            //priority search 2 : now i first lookup f needed group nodes will be tested
-            if (dataObjectRef == null || typeof dataObjectRef != 'undefined') {
-               
-             
-                dataObjectRef = classScope.nodeHashGroup[key];
-            } else {
-             
-            };
+        classScope.nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
+        
+        if (typeof key === 'string' || key instanceof String) {            
+            dataObjectRef = classScope.nodeHash[classScope.nodeTypeCurrent][key];
+         
         } else {
             dataObjectRef = classScope.nodeHashIDMap[key];
         }
                 
-        
+        console.log("dataObjectRef= " + dataObjectRef);
         if (dataObjectRef == null) {
-            console.error('a call to  getNodeObject using node name ' + key + ' has failed , no such node found');
+            console.error('a call to  getNodeObject using ' + currentNodeType + ' list id and using node name ' + key + ' has failed , no such node found');
             return null;
         }
 
@@ -469,7 +420,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     }
 
     this.lookat = function (key, direction,distance, duration, callback) {
-        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRef = classScope.getNodeObject(key,null,classScope.nodeTypeMatrixtransform);
         
         var dataObjectRefSingle;
         if (dataObjectRef != null) {
@@ -506,7 +457,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
 
-        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
         var dataObjectRefSingle;
         if (dataObjectRef != null) {
             if (direction == null) {
@@ -540,12 +491,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     }
 
 
-    this.setNodeVisibility = function (key, makeVisible,nodeIndex) {
+    this.setNodeVisibility = function (key, makeVisible, nodeIndex, currentNodeType) {
         var useTogglebehaviour = false;
         if (makeVisible == null) {
             useTogglebehaviour = true;
         }
-        var dataObjectRef = classScope.getNodeObject(key);
+        var dataObjectRef = classScope.getNodeObject(key, null, currentNodeType);
         var dataObjectRefSingle;
         var loopArray = false;
         if (dataObjectRef != null) {
@@ -574,7 +525,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     dataObjectRef[i].isVisible = makeVisible;
                 }
             }
-            
+           
             if (makeVisible) {               
                 classScope.api.show(dataObjectRefSingle.instanceID);
                 if (loopArray) {
@@ -593,8 +544,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         }
     }
 
-    this.toggleNodeVisibility = function (key,nodeIndex) {
-        classScope.setNodeVisibility(key, null, nodeIndex);
+    this.toggleNodeVisibility = function (key, nodeIndex, currentNodeType) {
+        classScope.setNodeVisibility(key, null, nodeIndex, currentNodeType);
     }
 
     this.getMaterialObject = function (materialName) {
