@@ -26,9 +26,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.nodeTypeRigGeometry = "RigGeometry";
 
     classScope.nodeHash[classScope.nodeTypeMatrixtransform] = {};
-classScope.nodeHash[classScope.nodeTypeGeometry] = {};
-classScope.nodeHash[classScope.nodeTypeGroup] = {};
-classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
+    classScope.nodeHash[classScope.nodeTypeGeometry] = {};
+    classScope.nodeHash[classScope.nodeTypeGroup] = {};
+    classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
 
     this.nodeHashIDMap = {};
     this.eventListeners = {};
@@ -221,6 +221,7 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
 
 
     this.onClick = function (e) {
+      
         var node = classScope.getNodeObject(e.instanceID);
         e.node = node;
         for (var i = 0; i < classScope.eventListeners["click"].length; i++) {
@@ -240,6 +241,7 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
        
 
         var currentNodeName = "";
+        var currentNodeGroup = "";
         var a = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
        
         for (var prop in nodes) {
@@ -249,15 +251,18 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
                 if ((node.name.toLowerCase().indexOf(".fbx") != -1) || (node.name.toLowerCase().indexOf("rootmodel") != -1) || (node.name.toLowerCase().indexOf("rootnode") != -1) || (node.name.toLowerCase().indexOf("polygonnode") != -1)) {
                     continue;
                 }
+              
                 for (var k = 0; k < a.length; k++) {
                     if (node.type != a[k]) {
                         continue
                     }
-                    classScope.nodeTypeCurrent = a[k];             
+                    ;
+                    classScope.nodeTypeCurrent = a[k];
+                   
                     var n = classScope.nodeHash[classScope.nodeTypeCurrent];
                    
                     if (node.type == classScope.nodeTypeGeometry || node.type == classScope.nodeTypeRigGeometry) {
-                        classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeGroup][currentNodeName];
                                            
                         break;
                     }
@@ -270,6 +275,7 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
                     
                     
                     currentNodeName = node.name;
+                    currentNodeGroup = classScope.nodeTypeCurrent;
                     node.isVisible = true;
                    
                     if (n[node.name] != null) {
@@ -385,7 +391,8 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
 
     }
     // key can be a name or an instance id. Also remember instance id's of geometry nodes are mapped to their relevant root matrix transform node
-    this.getNodeObject = function (key, nodeIndex,currentNodeType) {
+    this.getNodeObject = function (key, nodeIndex, currentNodeType) {
+     
         var dataObjectRef;
         classScope.nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
         
@@ -396,7 +403,7 @@ classScope.nodeHash[classScope.nodeTypeRigGeometry] = {};
             dataObjectRef = classScope.nodeHashIDMap[key];
         }
                 
-        console.log("dataObjectRef= " + dataObjectRef);
+       
         if (dataObjectRef == null) {
             console.error('a call to  getNodeObject using ' + currentNodeType + ' list id and using node name ' + key + ' has failed , no such node found');
             return null;
