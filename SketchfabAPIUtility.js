@@ -636,7 +636,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     };
 
-    this.setTexture = function (materialName, channelPropertyName, url, textureObjectDefaults, performCacheReset) {
+    this.setTexture = function (materialName, channelPropertyName, url, textureObjectDefaults,channelObjectDefaults, performCacheReset) {
         
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
@@ -666,6 +666,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     channelObjectRef.textureCached = channelObjectRef.texture;
 
 
+                }
+
+				if (channelObjectDefaults != null) {
+					for (var prop in channelObjectDefaults) {                           
+						channelObjectRef[prop] = channelObjectDefaults[prop];                           
+					}
                 }
                 
                 //if the material never had a texture object to begin with we need to generate one for it
@@ -738,7 +744,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     };
 
     this.resetTexture = function (materialName, channelPropertyName) {
-        classScope.setTexture(materialName, channelPropertyName, "",null, true);
+        classScope.setTexture(materialName, channelPropertyName, "",null,null, true);
 
     };
 
