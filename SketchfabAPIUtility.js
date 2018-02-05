@@ -247,13 +247,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         for (var prop in nodes) {
             var node = nodes[prop];            
            
-            if (node.name !== undefined) {
-                if ((node.name.toLowerCase().indexOf(".fbx") != -1) || (node.name.toLowerCase().indexOf("rootmodel") != -1) || (node.name.toLowerCase().indexOf("rootnode") != -1) || (node.name.toLowerCase().indexOf("polygonnode") != -1)) {
+            if (node.name !== undefined && node.name !== "" && node.name !== "undefined" && node.name !== null ) {
+				
+                if ((node.name.toLowerCase().indexOf(".fbx") !== -1) || (node.name.toLowerCase().indexOf("rootmodel") !== -1) || (node.name.toLowerCase().indexOf("rootnode") !== -1) || (node.name.toLowerCase().indexOf("polygonnode") !== -1)) {
                     continue;
                 }
               
                 for (var k = 0; k < a.length; k++) {
-                    if (node.type != a[k]) {
+                    if (node.type !== a[k]) {
                         continue;
                     }
                     
@@ -261,7 +262,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                    
                     var n = classScope.nodeHash[classScope.nodeTypeCurrent];
                    
-                    if (node.type == classScope.nodeTypeGeometry || node.type == classScope.nodeTypeRigGeometry) {
+                    if (node.type === classScope.nodeTypeGeometry || node.type === classScope.nodeTypeRigGeometry) {
                         classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeGroup][currentNodeName];
                                            
                         break;
@@ -275,32 +276,37 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     
                     
                     currentNodeName = node.name;
-                    currentNodeGroup = classScope.nodeTypeCurrent;
+                    currentNodeGroup = classScope.nodeTypeCurrent;				
+					
                     node.isVisible = true;
-                   
-                    if (n[node.name] !== null) {
-                        //so now we have nodes with the same name and need to convert this storage into an array or push into that array
-                        if (!Array.isArray(n[node.name])) {
+					if(n[node.name] !== undefined){
 
-                            var nodeTemp = n[node.name];
-                            n[node.name] = null;
-                            n[node.name] = [];
-                            n[node.name].push(nodeTemp);
-                            n[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
+						if (!Array.isArray(n[node.name])) {
 
-                        } else {
-                            n[node.name].push(node);
-                            classScope.nodeHashIDMap[node.instanceID] =n[currentNodeName];
-                        }
+							var nodeTemp = n[node.name];
+							n[node.name] = null;
+							n[node.name] = [];
+							n[node.name].push(nodeTemp);
+							n[node.name].push(node);
+							classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
 
-                    } else {
-                        n[node.name] = node;
+						} else {
+							n[node.name].push(node);
+							classScope.nodeHashIDMap[node.instanceID] =n[currentNodeName];
+						}
+					
+					}else{
+						n[node.name] = node;
                         classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
-                    }
+					}
+                    
                    
 
                 }
+
+				
+
+
             }
         }
 
