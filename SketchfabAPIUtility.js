@@ -225,15 +225,19 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
       
         var node = classScope.getNodeObject(e.instanceID);
 		var parentGroup = node.parent;
-		while(parentGroup.type !== classScope.nodeTypeGroup ){
-			parentGroup = parentGroup.parent;
+		if(parentGroup !== null){
+			while(parentGroup.type !== classScope.nodeTypeGroup ){
+				parentGroup = parentGroup.parent;
 		
+			}
 		}
 
 		var parentMatrixTransform = node.parent;
-		while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
-			parentMatrixTransform = parentMatrixTransform.parent;
+		if(parentMatrixTransform !== null){
+			while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
+				parentMatrixTransform = parentMatrixTransform.parent;
 		
+			}
 		}
 
         e.node = node;
