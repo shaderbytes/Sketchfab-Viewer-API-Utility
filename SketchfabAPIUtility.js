@@ -2,6 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectRef) {
     var classScope = this;
+	this.version = "2.0.0.0";
     this.api = null;
     this.client = null;
     this.clientInitObject = { };//if you want any default init options hard coded just add them here
@@ -292,7 +293,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             console.log('Error when calling getSceneGraph', err);
             return;
         }
-
+		classScope.nodesRaw = root;
         var currentNodeName = "";
         var currentNodeGroup = "";
         var types = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
