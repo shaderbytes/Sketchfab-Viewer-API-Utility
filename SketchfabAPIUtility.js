@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectRef) {
     var classScope = this;
-	this.version = "2.0.0.0";
+	this.version = "1.0.0.0";
     this.api = null;
     this.client = null;
     this.clientInitObject = { };//if you want any default init options hard coded just add them here
@@ -112,8 +112,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         //for each call into the api that gets used for preprocesing a flag should be created which can be validated to decide that the 
         //utility has finished all preprocessing       
-        classScope.api.getMaterialList(classScope.generateMaterialHash);        
-        classScope.api.getSceneGraph(classScope.generateNodeHashRecursive);
+        classScope.api.getMaterialList(classScope.generateMaterialHash);
+        classScope.api.getNodeMap(classScope.generateNodeHash);       
         classScope.api.getAnnotationList(classScope.generateAnnotationControls);
         classScope.api.getAnimations(classScope.generateAnimationControls);
         //possible other calls here ...
@@ -229,82 +229,96 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             classScope.eventListeners.click[i](e);
         }
     };
+    
+   
 
-    this._hasValidName = function(node){
-        return node.name !== undefined && node.name !== "" && node.name !== "undefined" && node.name !== null 
-          && (node.name.toLowerCase().indexOf(".fbx") === -1) 
-              && (node.name.toLowerCase().indexOf("rootmodel") === -1) 
-              && (node.name.toLowerCase().indexOf("rootnode") === -1) 
-              && (node.name.toLowerCase().indexOf("polygonnode") === -1)
-    };
-
-    this.handleNode = function(node, types, currentNodeName, currentNodeGroup){
-        if (classScope._hasValidName(node) && types.indexOf(node.type) >= 0) {
-
-            classScope.nodeTypeCurrent = node.type;
-
-            var n = classScope.nodeHash[classScope.nodeTypeCurrent];
-
-            if (node.type === classScope.nodeTypeGeometry || node.type === classScope.nodeTypeRigGeometry) {
-                classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeGroup][currentNodeName];
-                return;
-            }
-
-            if (node.children.length === 0) {
-                return;
-            }
-
-            currentNodeName = node.name;
-            currentNodeGroup = classScope.nodeTypeCurrent;
-
-            node.isVisible = true;
-            if(n[node.name] !== undefined){
-
-              if (!Array.isArray(n[node.name])) {
-
-                var nodeTemp = n[node.name];
-                n[node.name] = null;
-                n[node.name] = [];
-                n[node.name].push(nodeTemp);
-                n[node.name].push(node);
-                classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
-
-              } else {
-                n[node.name].push(node);
-                classScope.nodeHashIDMap[node.instanceID] =n[currentNodeName];
-              }
-
-            } else {
-              n[node.name] = node;
-              classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
-            }
-        }
-
-        // recurse through the children
-        for(var i = 0; i < node.children.length; i++) {
-            var child = node.children[i];
-            this.handleNode(child, types, currentNodeName, currentNodeGroup);
-        }
-    };
-
-   this.generateNodeHashRecursive = function (err, root) {
-
+    this.generateNodeHash = function (err, nodes) {
+       
         if (err) {
-            console.log('Error when calling getSceneGraph', err);
+            console.log('Error when calling getNodeMap');
             return;
         }
-		classScope.nodesRaw = root;
+        classScope.nodesRaw = nodes;
+       
+
         var currentNodeName = "";
         var currentNodeGroup = "";
-        var types = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
+        var a = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
+       
+        for (var prop in nodes) {
+            var node = nodes[prop];   
+			  node.isVisible = true;
+           
+            if (node.name === undefined || node.name === "" || node.name === "undefined" || node.name == null ) {
+			continue;
+			}
+				
+                if ((node.name.toLowerCase().indexOf(".fbx") !== -1) || (node.name.toLowerCase().indexOf("rootmodel") !== -1) || (node.name.toLowerCase().indexOf("rootnode") !== -1) || (node.name.toLowerCase().indexOf("polygonnode") !== -1)) {
+                    continue;
+                }
+              
+                for (var k = 0; k < a.length; k++) {
+                    if (node.type !== a[k]) {
+                        continue;
+                    }
+                    
+                    classScope.nodeTypeCurrent = a[k];
+                   
+                    var n = classScope.nodeHash[classScope.nodeTypeCurrent];
+                   
+                    if (node.type === classScope.nodeTypeGeometry || node.type === classScope.nodeTypeRigGeometry) {
+                        classScope.nodeHashIDMap[node.instanceID] = classScope.nodeHash[currentNodeGroup][currentNodeName];
+                                           
+                        break;
+                    }
 
-        classScope.handleNode(root, types, "", "");
+                    
+                    if (node.children.length === 0) {
+                       
+                        break;
+                    }
+                    
+                    
+                    currentNodeName = node.name;
+                    currentNodeGroup = classScope.nodeTypeCurrent;				
+					
+                  
+					if(n[node.name] !== undefined){
+
+						if (!Array.isArray(n[node.name])) {
+
+							var nodeTemp = n[node.name];
+							n[node.name] = null;
+							n[node.name] = [];
+							n[node.name].push(nodeTemp);
+							n[node.name].push(node);
+							classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
+
+						} else {
+							n[node.name].push(node);
+							classScope.nodeHashIDMap[node.instanceID] =n[currentNodeName];
+						}
+					
+					}else{
+						n[node.name] = node;
+                        classScope.nodeHashIDMap[node.instanceID] = n[currentNodeName];
+					}
+                    
+                   
+
+                }
+
+				
+
+
+            
+        }
 
         if (classScope.enableDebugLogging) {
-            for (var m = 0; m < types.length; m++) {
+            for (var m = 0; m < a.length; m++) {
                 console.log(" ");
-                console.log("nodes listing " + types[m]);
-                var p = classScope.nodeHash[types[m]];
+                console.log("nodes listing " + a[m]);
+                var p = classScope.nodeHash[a[m]];
                 for (var key in p) {
                     if (Array.isArray(p[key])) {
                         console.log("multiple nodes with same name ,use name and index to reference a single instance, if no index is passed in conjunction with this name, all nodes with this name would be affected: ");
@@ -317,11 +331,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                     }
                 }
             }
+           
         }
 
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
     };
+
+   
+
+
 
     this.generateAnnotationControls = function (err, annotations) {
         if (err) {
@@ -385,7 +404,15 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.getNodeObject = function (key, nodeIndex, currentNodeType) {
      
         var dataObjectRef;
+		if(nodeIndex === undefined){
+			nodeIndex = null;
+		}
+
+		if(currentNodeType === undefined){
+			currentNodeType = null;
+		}
         classScope.nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
+		console.log("classScope.nodeTypeCurrent "+classScope.nodeTypeCurrent);
         
         if (typeof key === 'string' || key instanceof String) {            
             dataObjectRef = classScope.nodeHash[classScope.nodeTypeCurrent][key];
@@ -395,7 +422,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         }
                 
        
-        if (dataObjectRef === null) {
+        if (dataObjectRef === undefined) {
             console.error('a call to  getNodeObject using ' + currentNodeType + ' list id and using node name ' + key + ' has failed , no such node found');
             return null;
         }
@@ -497,8 +524,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         var dataObjectRef = classScope.getNodeObject(key, null, currentNodeType);
         var dataObjectRefSingle;
         var loopArray = false;
-        var i = 0;
-        if (dataObjectRef !== null) {
+		var i = 0;
+        if (dataObjectRef !== undefined) {
 
             if (Array.isArray(dataObjectRef)) {
                 if (nodeIndex === null) {
@@ -659,16 +686,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
                 }
 
-                if (channelObjectDefaults != null) {
-                    for (var prop in channelObjectDefaults) {
-                        channelObjectRef[prop] = channelObjectDefaults[prop];
-                    }
+				if (channelObjectDefaults != null) {
+					for (var prop in channelObjectDefaults) {                           
+						channelObjectRef[prop] = channelObjectDefaults[prop];                           
+					}
                 }
                 
                 //if the material never had a texture object to begin with we need to generate one for it
                 //else use the existing object to try preserve all properties excpt the texture uid obviously
                 var texob = {};
-                var prop = null;
+				var prop = null;
                 if (channelObjectRef.textureCached === null) {
                     texob = {};
                     texob.internalFormat = "RGB";
