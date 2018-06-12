@@ -5,7 +5,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 	this.version = "2.0.0.0";
     this.api = null;
     this.client = null;
-    this.clientInitObject = { };//if you want any default init options hard coded just add them here
+    this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
     if (clientInitObjectRef !== null) {
         for (var prop in clientInitObjectRef) {       
             classScope.clientInitObject[prop] = clientInitObjectRef[prop];
@@ -87,7 +87,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     this.create = function () {
        
-        classScope.client = new Sketchfab('1.0.0', classScope.iframe);
+        classScope.client = new Sketchfab(classScope.iframe);
 
         classScope.clientInitObject.success = classScope.onClientInit;
         classScope.clientInitObject.error = classScope.onClientError;
@@ -193,7 +193,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             classScope.eventListeners[event] = [];
             if (event == "click") {
                 if (classScope.isInitialized) {
-                    classScope.api.addEventListener("click", classScope.onClick);
+                    classScope.api.addEventListener("click", classScope.onClick,{ pick: 'slow' });
                 } else {
                     console.log("a call to add a click event listener has been rejected because this utility has not completed initialization");
                     return;
@@ -225,7 +225,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
       
         var node = classScope.getNodeObject(e.instanceID);
 		var parentGroup = node.parent;
-		if(parentGroup !== null){
+		if(parentGroup !== null && parentGroup !== undefined){
 			while(parentGroup.type !== classScope.nodeTypeGroup ){
 				parentGroup = parentGroup.parent;
 		
@@ -233,7 +233,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 		}
 
 		var parentMatrixTransform = node.parent;
-		if(parentMatrixTransform !== null){
+		if(parentMatrixTransform !== null && parentMatrixTransform !== undefined){
 			while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
 				parentMatrixTransform = parentMatrixTransform.parent;
 		
@@ -311,7 +311,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 			 node.parent = parent;
 			 node.index = 0;
 
-			 if(n[classScope.nodeNameCurrent] !== undefined){
+			 if(n[classScope.nodeNameCurrent] !== undefined && n[classScope.nodeNameCurrent] !== null){
 
               if (!Array.isArray(n[classScope.nodeNameCurrent])) {
 
@@ -462,7 +462,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         }
                 
        
-        if (dataObjectRef === null) {
+        if (dataObjectRef === null || dataObjectRef === undefined) {
             console.error('a call to  getNodeObject using ' + currentNodeType + ' list id and using node name ' + key + ' has failed , no such node found');
             return null;
         }
@@ -488,11 +488,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         var dataObjectRef = classScope.getNodeObject(key,null,classScope.nodeTypeMatrixtransform);
         
         var dataObjectRefSingle;
-        if (dataObjectRef !== null) {
-            if (direction === null) {
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
+            if (direction === null || direction === undefined) {
                 direction = classScope.vectorForward;
             }
-            if (distance === null) {
+            if (distance === null || distance === undefined) {
                 distance = 10;
             }
             if (Array.isArray(dataObjectRef)) {
@@ -524,11 +524,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
         var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
         var dataObjectRefSingle;
-        if (dataObjectRef !== null) {
-            if (direction === null) {
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
+            if (direction === null || direction === undefined) {
                 direction = classScope.vectorForward;
             }
-            if (distance === null) {
+            if (distance === null || distance === undefined) {
                 distance = 1;
             }
             if (Array.isArray(dataObjectRef)) {
@@ -537,7 +537,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
             } else {
                 dataObjectRefSingle = dataObjectRef;
             }
-            if (dataObjectRefSingle.worldMatrixisCached === undefined) {
+            if (dataObjectRefSingle.worldMatrixisCached === undefined || dataObjectRefSingle.worldMatrixisCached === null) {
                 dataObjectRefSingle.worldMatrixisCached = true;
                 dataObjectRefSingle.worldMatrixCached = dataObjectRefSingle.worldMatrix;
             
@@ -565,7 +565,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         var dataObjectRefSingle;
         var loopArray = false;
         var i = 0;
-        if (dataObjectRef !== null) {
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
 
             if (Array.isArray(dataObjectRef)) {
                 if (nodeIndex === null) {
@@ -616,7 +616,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     this.getMaterialObject = function (materialName) {
         var materialObjectRef = classScope.materialHash[materialName];
-        if (materialObjectRef === null) {
+        if (materialObjectRef === null || materialObjectRef === undefined) {
             console.error('a call to getMaterialObject using material name ' + materialName + ' has failed , no such material found');
             return null;
         }
@@ -627,7 +627,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.getChannelObject = function (materialObjectRef, channelPropertyName) {
        
         var channelObjectRef = materialObjectRef.channels[channelPropertyName];
-        if (channelObjectRef === null) {
+        if (channelObjectRef === null || channelObjectRef === undefined ) {
             console.error('a call to getChannelObject using channelPropertyName name ' + channelPropertyName + ' has failed , no such channelPropertyName found');
             return null;
         }
@@ -646,7 +646,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         var materialObjectRef = classScope.getMaterialObject(materialName);
         if (materialObjectRef !== null) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
-            if (channelObjectRef !== null) {
+            if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
                     if (channelObjectRef.factorIsCached !== undefined) {
@@ -698,12 +698,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
-        if (materialObjectRef !== null) {
+        if (materialObjectRef !== null && materialObjectRef !== undefined) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
-            if (channelObjectRef !== null) {
+            if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
-                    if (channelObjectRef.textureIsCached !== undefined) {
+                    if (channelObjectRef.textureIsCached !== undefined && channelObjectRef.textureIsCached !== null) {
                         channelObjectRef.texture = channelObjectRef.textureCached;                      
                         classScope.api.setMaterial(materialObjectRef, function () {
 
@@ -719,14 +719,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 }
 
                
-                if (channelObjectRef.textureIsCached === undefined) {
+                if (channelObjectRef.textureIsCached === undefined || channelObjectRef.textureIsCached === null) {
                     channelObjectRef.textureIsCached = true;
                     channelObjectRef.textureCached = channelObjectRef.texture;
 
 
                 }
 
-                if (channelObjectDefaults != null) {
+                if (channelObjectDefaults !== null && channelObjectDefaults !== undefined) {
                     for (var prop in channelObjectDefaults) {
                         channelObjectRef[prop] = channelObjectDefaults[prop];
                     }
@@ -736,7 +736,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
                 //else use the existing object to try preserve all properties excpt the texture uid obviously
                 var texob = {};
                 var prop = null;
-                if (channelObjectRef.textureCached === null) {
+                if (channelObjectRef.textureCached === null || channelObjectRef.textureCached === undefined) {
                     texob = {};
                     texob.internalFormat = "RGB";
                     texob.magFilter = "LINEAR";
@@ -749,7 +749,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
                     // default properties for a newly created texture object are not always as coded above
                     //when needed, pass in an object with any alternate specified properities and they will be used
-                    if (textureObjectDefaults !== null) {
+                    if (textureObjectDefaults !== null && textureObjectDefaults !== null) {
                         for (prop in textureObjectDefaults) {                           
                             texob[prop] = textureObjectDefaults[prop];                           
                         }
@@ -763,7 +763,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
                 function addTextureCallback(err, uid) {
                     classScope.textureLoadingCount--;
-                    if (classScope.textureLoadedCallback !== null) {
+                    if (classScope.textureLoadedCallback !== null && classScope.textureLoadedCallback != undefined) {
                         classScope.textureLoadedCallback(classScope.textureLoadingCount);
 
                     }
@@ -782,7 +782,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
                 }
 
-                if (url === null) {
+                if (url === null || url === undefined) {
                     channelObjectRef.texture = null;
                     delete channelObjectRef.texture;
                     classScope.api.setMaterial(materialObjectRef);
@@ -811,12 +811,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
        
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
-        if (materialObjectRef !== null) {
+        if (materialObjectRef !== null && materialObjectRef != undefined) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef,channelPropertyName);
-            if (channelObjectRef !== null) {
+            if (channelObjectRef !== null && channelObjectRef != undefined) {
 
                 if (performCacheReset) {
-                    if (channelObjectRef.colorIsCached !== undefined) {
+                    if (channelObjectRef.colorIsCached !== undefined && channelObjectRef.colorIsCached !==null) {
                         channelObjectRef.color[0] = channelObjectRef.colorCached[0];
                         channelObjectRef.color[1] = channelObjectRef.colorCached[1];
                         channelObjectRef.color[2] = channelObjectRef.colorCached[2];
@@ -841,14 +841,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
               
 
-                if (channelObjectRef.color === null) {
+                if (channelObjectRef.color === null || channelObjectRef.color === undefined ) {
                    
                     channelObjectRef.color = [1,1,1];
                 } 
 
 
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                if (channelObjectRef.colorIsCached === undefined) {
+                if (channelObjectRef.colorIsCached === undefined || channelObjectRef.colorIsCached === null) {
                    
                     channelObjectRef.colorIsCached = true;
                     channelObjectRef.colorCached = [];
