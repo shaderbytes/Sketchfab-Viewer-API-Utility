@@ -1,8 +1,8 @@
 //code by shaderbytes//
 
-function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectRef) {
+function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-	this.version = "2.0.0.0";
+	this.version = "2.0.0.1";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -12,12 +12,15 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
           
         }
     }
+    this.textureCache = {};
     this.isInitialized = false;
     this.iframe = iframeRef;
     this.urlID = urlIDRef;
     this.materialHash = {};
     //node hash stores matrix transform nodes by name
     this.nodeHash = {};
+
+    this.materialsUIDPending = {};
     
 
     this.nodeTypeMatrixtransform = "MatrixTransform";
@@ -35,7 +38,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.eventListeners = {};
     this.nodesRaw = null;  
     this.enableDebugLogging = true;
-    this.callback = callbackRef;
+    
     //materialChannelProperties
     this.AOPBR = "AOPBR";
     this.AlbedoPBR = "AlbedoPBR";
@@ -65,7 +68,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 
     this.textureLoadingCount = 0;
     this.gamma = 2.4;
-    this.textureLoadedCallback  = null;
+   
 
     this.annotations = [];
     this.animationClips = {};
@@ -84,6 +87,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.nodePreprocessCompleted = false;
     this.annotationPreprocessCompleted = false;
     this.animationPreprocessCompleted = false;
+
+    this.EVENT_INITIALIZED = "event_initialized";
+    this.EVENT_CLICK = "event_click";
+    this.EVENT_TEXTURE_LOADED = "event_texture_loaded";
 
     this.create = function () {
        
@@ -129,7 +136,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         //validate all used preprocess flags
         if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted && classScope.animationPreprocessCompleted) {
             classScope.isInitialized = true;
-            classScope.callback();
+            classScope.dispatchEvent(classScope.EVENT_INITIALIZED, true);
+          
         }
     };
 
@@ -191,7 +199,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
     this.addEventListener = function(event,func){
         if (classScope.eventListeners[event] === null || classScope.eventListeners[event] === undefined ) {
             classScope.eventListeners[event] = [];
-            if (event == "click") {
+            if (event == classScope.EVENT_CLICK) {
                 if (classScope.isInitialized) {
                     classScope.api.addEventListener("click", classScope.onClick,{ pick: 'slow' });
                 } else {
@@ -207,18 +215,30 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         if (classScope.eventListeners[event] !== null) {
             for (var i = classScope.eventListeners[event].length-1; i >= 0; i--) {
                 if (classScope.eventListeners[event][i] == func) {
-                    classScope.eventListeners[event][i].splice(i, 1);
+                    classScope.eventListeners[event].splice(i, 1);
                 }
             }
             if (classScope.eventListeners[event].length === 0) {
                 classScope.eventListeners[event] = null;
-                if (event == "click") {
+                if (event == classScope.EVENT_CLICK) {
                     classScope.api.removeEventListener("click", classScope.onClick);
                 }
             }
 
         }
     };
+
+    this.dispatchEvent = function (eventName, eventObject) {
+     
+        var eventArray = classScope.eventListeners[eventName];
+        if (eventArray !== null && eventArray !== undefined) {           
+            for (var i = 0; i < eventArray.length; i++) {
+                eventArray[i](eventObject);
+
+            }
+        }
+
+    }
 
 
     this.onClick = function (e) {
@@ -227,25 +247,20 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
 		var parentGroup = node.parent;
 		if(parentGroup !== null && parentGroup !== undefined){
 			while(parentGroup.type !== classScope.nodeTypeGroup ){
-				parentGroup = parentGroup.parent;
-		
+				parentGroup = parentGroup.parent;		
 			}
 		}
-
 		var parentMatrixTransform = node.parent;
 		if(parentMatrixTransform !== null && parentMatrixTransform !== undefined){
 			while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
-				parentMatrixTransform = parentMatrixTransform.parent;
-		
+				parentMatrixTransform = parentMatrixTransform.parent;		
 			}
 		}
-
         e.node = node;
 		e.parentGroup = parentGroup;
 		e.parentMatrixTransform = parentMatrixTransform;
-        for (var i = 0; i < classScope.eventListeners.click.length; i++) {
-            classScope.eventListeners.click[i](e);
-        }
+		classScope.dispatchEvent(classScope.EVENT_CLICK, e);
+       
     };
 
 	this.validateNodeName = function(nodeNameRef){
@@ -693,116 +708,155 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
         classScope.setFactor(materialName, classScope.Opacity, 0, true);
 
     };
+    this.resetMaterialUID = function (materialName, channelPropertyName) {
 
-    this.setTexture = function (materialName, channelPropertyName, url, textureObjectDefaults,channelObjectDefaults, performCacheReset) {
-        
-        performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
         if (materialObjectRef !== null && materialObjectRef !== undefined) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
-                if (performCacheReset) {
-                    if (channelObjectRef.textureIsCached !== undefined && channelObjectRef.textureIsCached !== null) {
-                        channelObjectRef.texture = channelObjectRef.textureCached;                      
-                        classScope.api.setMaterial(materialObjectRef, function () {
-
-                        });
-                        return;
-                    } else {
-                        if (classScope.enableDebugLogging) {
-                            console.log("a call to reset a texture has been ignored since the texture has not changed");
-                        }
-                        return;
-                    }
-
-                }
-
-               
-                if (channelObjectRef.textureIsCached === undefined || channelObjectRef.textureIsCached === null) {
-                    channelObjectRef.textureIsCached = true;
-                    channelObjectRef.textureCached = channelObjectRef.texture;
-
-
-                }
-
-                if (channelObjectDefaults !== null && channelObjectDefaults !== undefined) {
-                    for (var prop in channelObjectDefaults) {
-                        channelObjectRef[prop] = channelObjectDefaults[prop];
-                    }
-                }
-                
-                //if the material never had a texture object to begin with we need to generate one for it
-                //else use the existing object to try preserve all properties excpt the texture uid obviously
-                var texob = {};
-                var prop = null;
-                if (channelObjectRef.textureCached === null || channelObjectRef.textureCached === undefined) {
-                    texob = {};
-                    texob.internalFormat = "RGB";
-                    texob.magFilter = "LINEAR";
-                    texob.minFilter = "LINEAR_MIPMAP_LINEAR";
-                    texob.texCoordUnit = 0;
-                    texob.textureTarget = "TEXTURE_2D";
-                    texob.uid = 0; // not actual value , the uid still needs to be returned from a succcessful texture upload.
-                    texob.wrapS = "REPEAT";
-                    texob.wrapT = "REPEAT";
-
-                    // default properties for a newly created texture object are not always as coded above
-                    //when needed, pass in an object with any alternate specified properities and they will be used
-                    if (textureObjectDefaults !== null && textureObjectDefaults !== null) {
-                        for (prop in textureObjectDefaults) {                           
-                            texob[prop] = textureObjectDefaults[prop];                           
-                        }
-                    }
-                } else {
-                    //deep copy
-                    for (prop in channelObjectRef.textureCached) {
-                        texob[prop] = channelObjectRef.textureCached[prop];
-                    }
-                }
-
-                function addTextureCallback(err, uid) {
-                    classScope.textureLoadingCount--;
-                    if (classScope.textureLoadedCallback !== null && classScope.textureLoadedCallback != undefined) {
-                        classScope.textureLoadedCallback(classScope.textureLoadingCount);
-
-                    }
-                    if (err) {
-                        console.log('Error when calling  api.addTexture');
-                        return;
-                    }
-
-                    texob.uid = uid;
-                    channelObjectRef.texture = texob;
-
-                    classScope.api.setMaterial(materialObjectRef, function () {
-
-                    });
-
-
-                }
-
-                if (url === null || url === undefined) {
-                    channelObjectRef.texture = null;
-                    delete channelObjectRef.texture;
+                if (channelObjectRef.textureIsCached !== undefined && channelObjectRef.textureIsCached !== null) {
+                    channelObjectRef.texture = channelObjectRef.textureCached;
                     classScope.api.setMaterial(materialObjectRef);
-                } else {
-                    classScope.api.addTexture(url, addTextureCallback);
-                    classScope.textureLoadingCount++;
-                    if (classScope.textureLoadedCallback !== null) {
-                        classScope.textureLoadedCallback(classScope.textureLoadingCount);
-
-                    }
+                   
                 }
 
             }
+
         }
 
+    }
 
+    
+    this.setMaterialUIDPending = function (materialName, channelPropertyName, cacheKey, textureObjectDefaults, channelObjectDefaults) {
+
+        cacheKey = cacheKey || "unset_cacheKey";
+
+        var ob = {};
+        ob.materialName = materialName;
+        ob.channelPropertyName = channelPropertyName;
+        ob.textureObjectDefaults = textureObjectDefaults;
+        ob.channelObjectDefaults = channelObjectDefaults;
+
+        var storage = classScope.materialsUIDPending[cacheKey];
+        if (storage === null || storage === undefined) {
+            storage = classScope.materialsUIDPending[cacheKey] = [];
+        }
+        
+        storage.push(ob);
+
+    }
+    this.applyMaterialUIDPending = function (cacheKey) {
+
+        if (cacheKey !== null && cacheKey !== undefined && cacheKey !== "") {
+            var storage = classScope.materialsUIDPending[cacheKey];
+            var uid = classScope.textureCache[cacheKey];
+            if (storage !== null && storage !== undefined ) {
+                for (var i = 0; i < storage.length; i++) {
+                    var ob = storage[i];
+                    var materialName =   ob.materialName;
+                    var channelPropertyName = ob.channelPropertyName;
+                    var textureObjectDefaults= ob.textureObjectDefaults;
+                    var channelObjectDefaults = ob.channelObjectDefaults;
+                    var materialObjectRef = classScope.getMaterialObject(materialName);
+                    if (materialObjectRef !== null && materialObjectRef !== undefined) {
+                        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+                        if (channelObjectRef !== null && channelObjectRef !== undefined) {
+
+                            //remove texture
+                            if (uid === "") {
+
+                                channelObjectRef.texture = null;
+                                delete channelObjectRef.texture;
+                                classScope.api.setMaterial(materialObjectRef);
+
+                            } else {
+
+
+                                //this is the cache of the original texture
+                                if (channelObjectRef.textureIsCached === undefined || channelObjectRef.textureIsCached === null) {
+                                    channelObjectRef.textureIsCached = true;
+                                    channelObjectRef.textureCached = channelObjectRef.texture;
+                                }
+
+                                //this is to add channel object defaults
+                                if (channelObjectDefaults !== null && channelObjectDefaults !== undefined) {
+                                    for (var prop in channelObjectDefaults) {
+                                        channelObjectRef[prop] = channelObjectDefaults[prop];
+                                    }
+                                }
+
+                                //if no texture property exists , create one , if it does exist, copy it
+                                var texob = {};
+                                var prop = null;
+                                if (channelObjectRef.textureCached === null || channelObjectRef.textureCached === undefined) {
+                                    texob = {};
+                                    texob.internalFormat = "RGB";
+                                    texob.magFilter = "LINEAR";
+                                    texob.minFilter = "LINEAR_MIPMAP_LINEAR";
+                                    texob.texCoordUnit = 0;
+                                    texob.textureTarget = "TEXTURE_2D";
+                                    texob.uid = 0; // not actual value , the uid still needs to be returned from a succcessful texture upload.
+                                    texob.wrapS = "REPEAT";
+                                    texob.wrapT = "REPEAT";
+
+                                } else {
+                                    //deep copy
+                                    for (prop in channelObjectRef.textureCached) {
+                                        texob[prop] = channelObjectRef.textureCached[prop];
+                                    }
+                                }
+
+                                //this is to add texture object defaults
+                                if (textureObjectDefaults !== null && textureObjectDefaults !== null) {
+                                    for (prop in textureObjectDefaults) {
+                                        texob[prop] = textureObjectDefaults[prop];
+                                    }
+                                }
+
+                                channelObjectRef.texture = texob;
+                                channelObjectRef.texture.uid = uid;
+                                classScope.api.setMaterial(materialObjectRef);
+                            }
+                        }
+                    }
+                }
+
+                classScope.materialsUIDPending[cacheKey] = null;
+                storage = null;
+                delete classScope.materialsUIDPending[cacheKey];
+            }
+        }     
+
+    }
+
+    this.removeTexture = function (cacheKey) {
+        cacheKey = cacheKey || "unset_cacheKey";
+        classScope.textureCache[cacheKey] = "";
+        classScope.applyMaterialUIDPending(cacheKey);
+
+    }
+
+    this.addTexture = function (url, cacheKey, useCashing) {
+        useCashing = useCashing || false;
+        cacheKey = cacheKey || "unset_cacheKey";
+        if (useCashing) {
+            if (classScope.textureCache[cacheKey] !== null && classScope.textureCache[cacheKey] !== undefined) {               
+                classScope.applyMaterialUIDPending(cacheKey);
+                return;
+            }
+        }
+        function addTextureCallback(err, uid) {
+            classScope.textureCache[cacheKey] = uid;
+            classScope.applyMaterialUIDPending(cacheKey);
+            classScope.dispatchEvent(classScope.EVENT_TEXTURE_LOADED, { "cacheKey": cacheKey });
+        }
+        classScope.api.addTexture(url, addTextureCallback);
     };
 
     this.resetTexture = function (materialName, channelPropertyName) {
-        classScope.setTexture(materialName, channelPropertyName, "",null,null, true);
+
+        classScope.resetMaterialUID(materialName, channelPropertyName);
 
     };
 
@@ -955,12 +1009,4 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, callbackRef, clientInitObjectR
       
    }
    */
-
-
-    classScope.create();
-
-
-
-
-
 }
