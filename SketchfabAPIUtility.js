@@ -282,7 +282,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 				return false;
 			}
 
-			if (nodeName.indexOf("RootNode") != -1) {
+			if (nodeName.indexOf("rootnode") != -1) {
 
 			    return false;
 			}
@@ -296,10 +296,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 				return false;
 			}
 
-			if (nodeName.indexOf("FBX") != -1) {
-
-			    return false;
-			}
+			
 
 			if(nodeName.indexOf("undefined") != -1) {
 				
