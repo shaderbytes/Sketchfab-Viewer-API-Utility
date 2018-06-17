@@ -281,6 +281,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 			
 				return false;
 			}
+
+			if (nodeName.indexOf("RootNode") != -1) {
+
+			    return false;
+			}
 		
 			if(nodeName == "scene-polygonnode") {
 				
@@ -289,6 +294,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 			if(nodeName.indexOf("fbx") != -1) {
 				
 				return false;
+			}
+
+			if (nodeName.indexOf("FBX") != -1) {
+
+			    return false;
 			}
 
 			if(nodeName.indexOf("undefined") != -1) {
@@ -463,7 +473,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
 
     };
-    // key can be a name or an instance id. Also remember instance id's of geometry nodes are mapped to their relevant root matrix transform node
+    // key can be a name or an instance id.
     this.getNodeObject = function (key, nodeIndex, currentNodeType) {
      
         var dataObjectRef;
