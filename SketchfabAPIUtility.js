@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-	this.version = "2.0.0.1";
+	this.version = "2.0.0.2";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -110,7 +110,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        
         classScope.api = apiRef;      
         classScope.api.addEventListener('viewerready', classScope.onViewerReady);
-        classScope.api.start();
+       
     };
 
     this.onViewerReady = function () {
