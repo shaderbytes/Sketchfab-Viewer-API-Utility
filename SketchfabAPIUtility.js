@@ -273,7 +273,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
         if (typeof (nodeName) == "string") {
 
-            if (nodeName.length == 0) {
+            if (nodeName.length === 0) {
 
                 return false;
             }
@@ -356,7 +356,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
               n[classScope.nodeNameCurrent] = node;
               classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
             }
-			if(node.children == null || node.children === undefined){
+			if(node.children === null || node.children === undefined){
 				return;
 			}
 
@@ -532,31 +532,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
-    this.getVectorMagnitude = function (vector) {
-        return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]) + (vector[2] * vector[2]));
-
-    };
-
-    this.getVectorNormalized = function (vector) {
-        var mag = classScope.getVectorMagnitude(vector);
-        vector[0] /= mag;
-        vector[1] /= mag;
-        vector[2] /= mag;
-        return vector;
-
-
-    };
-
-    this.combineVectorDirections = function () {
-        var directionCombined = [0,0,0];
-        for (var i = 0; i < arguments.length; i++) {
-            directionCombined[0] += arguments[i][0];
-            directionCombined[1] += arguments[i][1];
-            directionCombined[2] += arguments[i][2];
-        }       
-        return classScope.getVectorNormalized(directionCombined);
-    };
-
+   
     
 
   
