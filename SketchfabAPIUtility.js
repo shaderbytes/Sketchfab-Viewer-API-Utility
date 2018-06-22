@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-	this.version = "2.0.0.2";
+	this.version = "2.0.0.3";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -263,58 +263,58 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        
     };
 
-	this.validateNodeName = function(nodeNameRef){
-		var nodeName = nodeNameRef.split(" ").join("").toLowerCase();
-		
-		if(nodeName === null || nodeName === undefined){
-			
-			return false;
-		}
+    this.validateNodeName = function (nodeNameRef) {
+        var nodeName = nodeNameRef.split(" ").join("").toLowerCase();
 
-		if(typeof(nodeName) == "string"){
-			
-			if(nodeName.length == 0){
-				
-				return false;
-			}
-			if(nodeName == "rootmodel") {
-			
-				return false;
-			}
+        if (nodeName === null || nodeName === undefined) {
 
-			if (nodeName.indexOf("rootnode") != -1) {
+            return false;
+        }
 
-			    return false;
-			}
-		
-			if(nodeName == "scene-polygonnode") {
-				
-				return false;
-			}
-			if(nodeName.indexOf("fbx") != -1) {
-				
-				return false;
-			}
+        if (typeof (nodeName) == "string") {
 
-			
+            if (nodeName.length == 0) {
 
-			if(nodeName.indexOf("undefined") != -1) {
-				
-				return false;
-			}
-		}
+                return false;
+            }
+            if (nodeName == "rootmodel") {
 
-		return true;
-	
-	}
+                return false;
+            }
 
-	this.generateNodeName = function(node){
-		if(node.name === null || node.name === undefined || node.name === "undefined"){
-			return "undefined_"+node.instanceID;
-		}else{
-			return node.name;
-		}
-	}
+            if (nodeName.indexOf("rootnode") != -1) {
+
+                return false;
+            }
+
+            if (nodeName == "scene-polygonnode") {
+
+                return false;
+            }
+            if (nodeName.indexOf("fbx") != -1) {
+
+                return false;
+            }
+
+
+
+            if (nodeName.indexOf("undefined") != -1) {
+
+                return false;
+            }
+        }
+
+        return true;
+
+    };
+
+    this.generateNodeName = function (node) {
+        if (node.name === null || node.name === undefined || node.name === "undefined") {
+            return "undefined_" + node.instanceID;
+        } else {
+            return node.name;
+        }
+    };
 
    
 
@@ -543,9 +543,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     };
 
     this.getVectorMagnitude = function (vector) {
-        return Math.sqrt((vector[0] * vector[0])+(vector[1] * vector[1])+(vector[2] * vector[2]));
+        return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]) + (vector[2] * vector[2]));
 
-    }
+    };
 
     this.getVectorNormalized = function (vector) {
         var mag = classScope.getVectorMagnitude(vector);
@@ -555,7 +555,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return vector;
 
 
-    }
+    };
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
 
@@ -740,14 +740,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 if (channelObjectRef.textureIsCached !== undefined && channelObjectRef.textureIsCached !== null) {
                     channelObjectRef.texture = channelObjectRef.textureCached;
                     classScope.api.setMaterial(materialObjectRef);
-                   
+
                 }
 
             }
 
         }
 
-    }
+    };
 
     
     this.setMaterialUIDPending = function (materialName, channelPropertyName, cacheKey, textureObjectDefaults, channelObjectDefaults) {
@@ -764,21 +764,21 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         if (storage === null || storage === undefined) {
             storage = classScope.materialsUIDPending[cacheKey] = [];
         }
-        
+
         storage.push(ob);
 
-    }
+    };
     this.applyMaterialUIDPending = function (cacheKey) {
 
         if (cacheKey !== null && cacheKey !== undefined && cacheKey !== "") {
             var storage = classScope.materialsUIDPending[cacheKey];
             var uid = classScope.textureCache[cacheKey];
-            if (storage !== null && storage !== undefined ) {
+            if (storage !== null && storage !== undefined) {
                 for (var i = 0; i < storage.length; i++) {
                     var ob = storage[i];
-                    var materialName =   ob.materialName;
+                    var materialName = ob.materialName;
                     var channelPropertyName = ob.channelPropertyName;
-                    var textureObjectDefaults= ob.textureObjectDefaults;
+                    var textureObjectDefaults = ob.textureObjectDefaults;
                     var channelObjectDefaults = ob.channelObjectDefaults;
                     var materialObjectRef = classScope.getMaterialObject(materialName);
                     if (materialObjectRef !== null && materialObjectRef !== undefined) {
@@ -848,16 +848,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 storage = null;
                 delete classScope.materialsUIDPending[cacheKey];
             }
-        }     
+        }
 
-    }
+    };
 
     this.removeTexture = function (cacheKey) {
         cacheKey = cacheKey || "unset_cacheKey";
         classScope.textureCache[cacheKey] = "";
         classScope.applyMaterialUIDPending(cacheKey);
 
-    }
+    };
 
     this.addTexture = function (url, cacheKey, useCashing) {
         useCashing = useCashing || false;
@@ -887,9 +887,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
-        if (materialObjectRef !== null && materialObjectRef != undefined) {
+        if (materialObjectRef !== null && materialObjectRef !== undefined) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef,channelPropertyName);
-            if (channelObjectRef !== null && channelObjectRef != undefined) {
+            if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
                     if (channelObjectRef.colorIsCached !== undefined && channelObjectRef.colorIsCached !==null) {
