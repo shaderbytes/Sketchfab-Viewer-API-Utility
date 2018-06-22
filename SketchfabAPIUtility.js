@@ -532,16 +532,6 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
-    this.combineVectorDirections = function () {
-        var directionCombined = [0,0,0];
-        for (var i = 0; i < arguments.length; i++) {
-            directionCombined[0] += arguments[i][0];
-            directionCombined[1] += arguments[i][1];
-            directionCombined[2] += arguments[i][2];
-        }       
-        return classScope.getVectorNormalized(directionCombined);
-    };
-
     this.getVectorMagnitude = function (vector) {
         return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]) + (vector[2] * vector[2]));
 
@@ -556,6 +546,20 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
 
     };
+
+    this.combineVectorDirections = function () {
+        var directionCombined = [0,0,0];
+        for (var i = 0; i < arguments.length; i++) {
+            directionCombined[0] += arguments[i][0];
+            directionCombined[1] += arguments[i][1];
+            directionCombined[2] += arguments[i][2];
+        }       
+        return classScope.getVectorNormalized(directionCombined);
+    };
+
+    
+
+  
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
 
