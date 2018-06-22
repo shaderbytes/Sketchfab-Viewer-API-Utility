@@ -538,9 +538,24 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             directionCombined[0] += arguments[i][0];
             directionCombined[1] += arguments[i][1];
             directionCombined[2] += arguments[i][2];
-        }
-        return directionCombined;
+        }       
+        return classScope.getVectorNormalized(directionCombined);
     };
+
+    this.getVectorMagnitude = function (vector) {
+        return Math.sqrt((vector[0] * vector[0])+(vector[1] * vector[1])+(vector[2] * vector[2]));
+
+    }
+
+    this.getVectorNormalized = function (vector) {
+        var mag = classScope.getVectorMagnitude(vector);
+        vector[0] /= mag;
+        vector[1] /= mag;
+        vector[2] /= mag;
+        return vector;
+
+
+    }
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
 
