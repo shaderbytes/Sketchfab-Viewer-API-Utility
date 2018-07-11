@@ -506,7 +506,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return dataObjectRef;
     };
 
-    this.lookat = function (key, direction,distance, duration, callback) {
+    this.lookat = function (key, direction,distance, duration,offset, callback) {
         var dataObjectRef = classScope.getNodeObject(key,null,classScope.nodeTypeMatrixtransform);
         
         var dataObjectRefSingle;
@@ -526,13 +526,47 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
            
             var target = [dataObjectRefSingle.worldMatrix[12], dataObjectRefSingle.worldMatrix[13], dataObjectRefSingle.worldMatrix[14]];
-            var eye = [target[0] + (direction[0] * distance), target[1] + (direction[1] * distance), target[2] +( direction[2] * distance)];
+            var eye = [target[0] + (direction[0] * distance), target[1] + (direction[1] * distance), target[2] + (direction[2] * distance)];
+            if (offset !== null && offset !== undefined) {
+                if (Array.isArray(offset)) {
+                    eye[0] += offset[0];
+                    eye[1] += offset[1];
+                    eye[2] += offset[2];
+                    target[0] += offset[0];
+                    target[1] += offset[1];
+                    target[2] += offset[2];
+                }
+            }
             classScope.api.setCameraLookAt(eye, target, duration, callback);
 
         }
     };
 
-   
+    this.getVectorMagnitude = function (vector) {
+        return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]) + (vector[2] * vector[2]));
+
+    };
+
+    this.getVectorNormalized = function (vector) {
+        var mag = classScope.getVectorMagnitude(vector);
+        vector[0] /= mag;
+        vector[1] /= mag;
+        vector[2] /= mag;
+        return vector;
+
+
+    };
+
+    this.combineVectorDirections = function () {
+        var directionCombined = [0,0,0];
+        for (var i = 0; i < arguments.length; i++) {
+            directionCombined[0] += arguments[i][0];
+            directionCombined[1] += arguments[i][1];
+            directionCombined[2] += arguments[i][2];
+        }       
+        return classScope.getVectorNormalized(directionCombined);
+    };
+
     
 
   
