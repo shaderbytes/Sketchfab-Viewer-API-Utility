@@ -415,9 +415,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
-    };
+   };
+   this.logObjectkeysAndValues = function (objectToLog) {
+       for (var prop in objectToLog) {
+           console.log(prop + " = " + objectToLog[prop]);
+       }
+   };
 
-    this.generateAnnotationControls = function (err, annotations) {
+   this.generateAnnotationControls = function (err, annotations) {
         if (err) {
             console.log('Error when calling getAnnotationList');
             return;
