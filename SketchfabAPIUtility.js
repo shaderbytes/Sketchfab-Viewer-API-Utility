@@ -417,8 +417,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.validateUtilGenerationPreprocess();
    };
    this.logObjectkeysAndValues = function (objectToLog) {
-       for (var prop in objectToLog) {
-           console.log(prop + " = " + objectToLog[prop]);
+       if (Array.isArray(objectToLog)) {
+           for (var i = 0; i < objectToLog.length; i++) {
+               console.log("array index: " + i + " = " + objectToLog[i]);
+           }
+
+       } else {
+
+           for (var prop in objectToLog) {
+               console.log(prop + " = " + objectToLog[prop]);
+           }
        }
    };
 
