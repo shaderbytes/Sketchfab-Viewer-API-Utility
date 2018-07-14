@@ -771,11 +771,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     };
 
-    this.setAlpha = function (materialName, factor) {
+    this.setOpacity = function (materialName, factor) {
         classScope.setFactor(materialName, classScope.Opacity, factor);
     };
 
-    this.resetAlpha = function (materialName) {
+    this.resetOpacity = function (materialName) {
         classScope.setFactor(materialName, classScope.Opacity, 0, true);
 
     };
