@@ -737,9 +737,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 if (performCacheReset) {
                     if (channelObjectRef.factorIsCached !== undefined) {
                         channelObjectRef.factor =  channelObjectRef.factorCached;
-                        classScope.api.setMaterial(materialObjectRef, function () {
-
-                        });
+                        classScope.api.setMaterial(materialObjectRef);
                         return;
                     } else {
                         if (classScope.enableDebugLogging) {
@@ -756,9 +754,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                     channelObjectRef.factorCached = channelObjectRef.factor;
                 }
                 channelObjectRef.factor = factor;
-                classScope.api.setMaterial(materialObjectRef, function () {
-
-                });
+                classScope.api.setMaterial(materialObjectRef);
 
             }
         }
@@ -987,9 +983,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 channelObjectRef.color[0] = classScope.srgbToLinear( parseInt(result[1], 16) / 255);
                 channelObjectRef.color[1] = classScope.srgbToLinear(parseInt(result[2], 16) / 255);
                 channelObjectRef.color[2] = classScope.srgbToLinear(parseInt(result[3], 16) / 255);
-                classScope.api.setMaterial(materialObjectRef, function () {
-
-                });
+                classScope.api.setMaterial(materialObjectRef);
 
             }
         }       
