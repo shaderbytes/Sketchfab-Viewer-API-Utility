@@ -57,7 +57,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.SpecularF0 = "SpecularF0";
     this.SpecularHardness = "SpecularHardness";
     this.SpecularPBR = "SpecularPBR";
-    this.NormalMap = "NormalMap";
+    this.ClearCoat = "ClearCoat";
+    this.ClearCoatNormalMap = "ClearCoatNormalMap";
+    this.ClearCoatRoughness = "ClearCoatRoughness";
+    this.Matcap = "Matcap";
+    this.SubsurfaceScattering = "SubsurfaceScattering";
+    this.SubsurfaceTranslucency = "SubsurfaceTranslucency";
 
     this.vectorForward = [0, -1, 0];
     this.vectorBackward = [0, 1, 0];
@@ -568,7 +573,24 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     };
 
     
+    this.refreshMatrix = function (key) {
+        console.log("refreshMatrix called");
+        var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
+            function matrixRefreshed(err, matrices) {
 
+                if (err) {
+                    console.log("an error occured while called refreshMatrix. Errer: " + err);
+                    return;
+                }
+               
+                dataObjectRef.worldMatrix = matrices.world;
+                dataObjectRef.worldMatrixisCached = null;
+            }
+            classScope.api.getMatrix(dataObjectRef.instanceID, matrixRefreshed);
+        }
+
+    }
   
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
