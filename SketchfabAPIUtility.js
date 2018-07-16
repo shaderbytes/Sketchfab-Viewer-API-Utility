@@ -95,7 +95,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     this.EVENT_INITIALIZED = "event_initialized";
     this.EVENT_CLICK = "event_click";
-    this.EVENT_TEXTURE_LOADED = "event_texture_loaded";
+    this.EVENT_TEXTURE_APPLIED = "event_texture_applied";
 
     this.create = function () {
        
@@ -720,6 +720,35 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return channelObjectRef;
     };
 
+    this.setChannelProperties = function (materialName, channelPropertyName, channelObjectDefaults) {
+        var materialObjectRef = classScope.getMaterialObject(materialName);
+        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+        classScope.setChannelPropertiesActual(channelObjectRef, channelObjectDefaults);
+    }
+
+    this.setChannelPropertiesActual = function (channelObjectRef, channelObjectDefaults) {
+        for (var prop in channelObjectDefaults) {
+            channelObjectRef[prop] = channelObjectDefaults[prop];
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------
+    this.setTextureProperties = function (materialName, channelPropertyName, textureObjectDefaults) {
+        var materialObjectRef = classScope.getMaterialObject(materialName);
+        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+        classScope.setTexturePropertiesActual(channelObjectRef, textureObjectDefaults);
+    }
+
+    this.setTexturePropertiesActual = function (channelObjectRef, textureObjectDefaults) {
+
+        if (channelObjectRef.texture !== null && channelObjectRef.texture !== undefined) {
+            for (var prop in textureObjectDefaults) {
+                channelObjectRef.texture[prop] = textureObjectDefaults[prop];
+            }
+        }
+       
+    }
+
    
 
     this.setFactor = function (materialName, channelPropertyName, factor, performCacheReset) {
@@ -848,9 +877,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
                                 //this is to add channel object defaults
                                 if (channelObjectDefaults !== null && channelObjectDefaults !== undefined) {
-                                    for (var prop in channelObjectDefaults) {
-                                        channelObjectRef[prop] = channelObjectDefaults[prop];
-                                    }
+                                    classScope.setChannelPropertiesActual(channelObjectRef, channelObjectDefaults);                                   
                                 }
 
                                 //if no texture property exists , create one , if it does exist, copy it
@@ -874,14 +901,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                                     }
                                 }
 
-                                //this is to add texture object defaults
-                                if (textureObjectDefaults !== null && textureObjectDefaults !== null) {
-                                    for (prop in textureObjectDefaults) {
-                                        texob[prop] = textureObjectDefaults[prop];
-                                    }
-                                }
 
                                 channelObjectRef.texture = texob;
+
+                                //this is to add texture object defaults
+                                if (textureObjectDefaults !== null && textureObjectDefaults !== null) {
+                                    classScope.setTexturePropertiesActual(channelObjectRef, textureObjectDefaults);
+                                }                                
+
                                 channelObjectRef.texture.uid = uid;
                                 classScope.api.setMaterial(materialObjectRef);
                             }
@@ -892,6 +919,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 classScope.materialsUIDPending[cacheKey] = null;
                 storage = null;
                 delete classScope.materialsUIDPending[cacheKey];
+
+                classScope.dispatchEvent(classScope.EVENT_TEXTURE_APPLIED, cacheKey);
             }
         }
 
