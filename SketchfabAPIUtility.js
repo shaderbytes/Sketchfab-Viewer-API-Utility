@@ -96,6 +96,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.EVENT_INITIALIZED = "event_initialized";
     this.EVENT_CLICK = "event_click";
     this.EVENT_TEXTURE_APPLIED = "event_texture_applied";
+    this.EVENT_ANNOTATION_SELECTED_IN_SCENE = "event_annotation_selected_in_scene";
 
     this.create = function () {
        
@@ -430,6 +431,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        }
    };
 
+   this.annotationSelectedInViewer = function (index) {
+
+       classScope.currentAnnotationIndex = index;
+       classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
+       classScope.dispatchEvent(classScope.EVENT_ANNOTATION_SELECTED_IN_SCENE, classScope.currentAnnotationObject);
+   }
+
    this.generateAnnotationControls = function (err, annotations) {
         if (err) {
             console.log('Error when calling getAnnotationList');
@@ -447,6 +455,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
 
         classScope.annotationPreprocessCompleted = true;
+
+        if (classScope.annotationLength > 0) {
+            classScope.api.addEventListener('annotationMouseSelect', classScope.annotationSelectedInViewer);
+        }
+
         classScope.validateUtilGenerationPreprocess();
     };
 
