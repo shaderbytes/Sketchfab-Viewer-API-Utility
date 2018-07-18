@@ -457,7 +457,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.annotationPreprocessCompleted = true;
 
         if (classScope.annotationLength > 0) {
-            classScope.api.addEventListener('annotationMouseSelect', classScope.annotationSelectedInViewer);
+            classScope.api.addEventListener('annotationSelect', classScope.annotationSelectedInViewer);
         }
 
         classScope.validateUtilGenerationPreprocess();
