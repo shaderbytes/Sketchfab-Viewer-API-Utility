@@ -606,7 +606,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             function matrixRefreshed(err, matrices) {
 
                 if (err) {
-                    console.log("an error occured while called refreshMatrix. Errer: " + err);
+                    console.log("an error occured while called refreshMatrix. Error: " + err);
                     return;
                 }
                
@@ -616,6 +616,40 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             classScope.api.getMatrix(dataObjectRef.instanceID, matrixRefreshed);
         }
 
+    }
+
+    this.setPosition = function (key, position, duration, easing, callback) {
+        duration = duration || 1;
+        var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
+        var dataObjectRefSingle;
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
+
+            if (Array.isArray(dataObjectRef)) {
+                console.log("multiple nodes returned during call to setPosition, first node will be used");
+                dataObjectRefSingle = dataObjectRef[0];
+            } else {
+                dataObjectRefSingle = dataObjectRef;
+            }
+
+            function onTranslate(err, position) {
+
+
+                if (err) {
+                    console.log("an error occured while called setPosition. Error: " + err);
+                    return;
+                }
+
+                classScope.refreshMatrix(key);
+                if (callback) {
+                    callback(err, position);
+                }
+
+            }
+
+            classScope.api.translate(dataObjectRefSingle.instanceID, position, duration, easing, onTranslate);
+            
+
+        }
     }
   
 
@@ -631,7 +665,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 distance = 1;
             }
             if (Array.isArray(dataObjectRef)) {
-                console.log("multiple nodes returned during call to lookat, first node will be used");
+                console.log("multiple nodes returned during call to translate, first node will be used");
                 dataObjectRefSingle = dataObjectRef[0];
             } else {
                 dataObjectRefSingle = dataObjectRef;
@@ -648,7 +682,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             dataObjectRefSingle.worldMatrix[12] = newPosition[0];
             dataObjectRefSingle.worldMatrix[13] = newPosition[1];
             dataObjectRefSingle.worldMatrix[14] = newPosition[2];
-            classScope.api.translate(dataObjectRef.instanceID, newPosition, duration,easing, callback);
+            classScope.api.translate(dataObjectRefSingle.instanceID, newPosition, duration, easing, callback);
 
         }
 
