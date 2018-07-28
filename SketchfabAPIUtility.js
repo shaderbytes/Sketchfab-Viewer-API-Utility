@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-	this.version = "2.0.0.3";
+    this.version = "2.0.0.3";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -28,7 +28,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.nodeTypeGeometry = "Geometry";
     this.nodeTypeGroup = "Group";
     this.nodeTypeRigGeometry = "RigGeometry";
-	this.nodeNameCurrent = "";
+    this.nodeNameCurrent = "";
     classScope.nodeHash[classScope.nodeTypeMatrixtransform] = {};
     classScope.nodeHash[classScope.nodeTypeGeometry] = {};
     classScope.nodeHash[classScope.nodeTypeGroup] = {};
@@ -250,22 +250,22 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.onClick = function (e) {
       
         var node = classScope.getNodeObject(e.instanceID);
-		var parentGroup = node.parent;
-		if(parentGroup !== null && parentGroup !== undefined){
-			while(parentGroup.type !== classScope.nodeTypeGroup ){
-				parentGroup = parentGroup.parent;		
-			}
-		}
-		var parentMatrixTransform = node.parent;
-		if(parentMatrixTransform !== null && parentMatrixTransform !== undefined){
-			while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
-				parentMatrixTransform = parentMatrixTransform.parent;		
-			}
-		}
+        var parentGroup = node.parent;
+        if(parentGroup !== null && parentGroup !== undefined){
+            while(parentGroup.type !== classScope.nodeTypeGroup ){
+                parentGroup = parentGroup.parent;		
+            }
+        }
+        var parentMatrixTransform = node.parent;
+        if(parentMatrixTransform !== null && parentMatrixTransform !== undefined){
+            while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
+                parentMatrixTransform = parentMatrixTransform.parent;		
+            }
+        }
         e.node = node;
-		e.parentGroup = parentGroup;
-		e.parentMatrixTransform = parentMatrixTransform;
-		classScope.dispatchEvent(classScope.EVENT_CLICK, e);
+        e.parentGroup = parentGroup;
+        e.parentMatrixTransform = parentMatrixTransform;
+        classScope.dispatchEvent(classScope.EVENT_CLICK, e);
        
     };
 
@@ -329,67 +329,67 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         if (types.indexOf(node.type) >= 0) {
 
 			
-			classScope.nodeTypeCurrent = node.type;
-			classScope.nodeNameCurrent = classScope.generateNodeName(node);
-			node.name = classScope.nodeNameCurrent;
+            classScope.nodeTypeCurrent = node.type;
+            classScope.nodeNameCurrent = classScope.generateNodeName(node);
+            node.name = classScope.nodeNameCurrent;
 
-			var n = classScope.nodeHash[classScope.nodeTypeCurrent];
+            var n = classScope.nodeHash[classScope.nodeTypeCurrent];
 
-			 node.isVisible = true;
-			 node.parent = parent;
-			 node.index = 0;
+            node.isVisible = true;
+            node.parent = parent;
+            node.index = 0;
 
-			 if(n[classScope.nodeNameCurrent] !== undefined && n[classScope.nodeNameCurrent] !== null){
+            if(n[classScope.nodeNameCurrent] !== undefined && n[classScope.nodeNameCurrent] !== null){
 
-              if (!Array.isArray(n[classScope.nodeNameCurrent])) {
+                if (!Array.isArray(n[classScope.nodeNameCurrent])) {
 
-                var nodeTemp = n[classScope.nodeNameCurrent];
-                n[classScope.nodeNameCurrent] = null;
-                n[classScope.nodeNameCurrent] = [];
-                n[classScope.nodeNameCurrent].push(nodeTemp);
-				nodeTemp.index =  n[classScope.nodeNameCurrent].length-1;
-                n[classScope.nodeNameCurrent].push(node);
-				node.index =  n[classScope.nodeNameCurrent].length-1;
-                classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                    var nodeTemp = n[classScope.nodeNameCurrent];
+                    n[classScope.nodeNameCurrent] = null;
+                    n[classScope.nodeNameCurrent] = [];
+                    n[classScope.nodeNameCurrent].push(nodeTemp);
+                    nodeTemp.index =  n[classScope.nodeNameCurrent].length-1;
+                    n[classScope.nodeNameCurrent].push(node);
+                    node.index =  n[classScope.nodeNameCurrent].length-1;
+                    classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
 
-              } else {
-                n[classScope.nodeNameCurrent].push(node);
-				node.index =  n[classScope.nodeNameCurrent].length-1;
-                classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
-              }
+                } else {
+                    n[classScope.nodeNameCurrent].push(node);
+                    node.index =  n[classScope.nodeNameCurrent].length-1;
+                    classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                }
 
             } else {
-              n[classScope.nodeNameCurrent] = node;
-              classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                n[classScope.nodeNameCurrent] = node;
+                classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
             }
-			if(node.children === null || node.children === undefined){
-				return;
-			}
+            if(node.children === null || node.children === undefined){
+                return;
+            }
 
-			if (node.children.length === 0) {
+            if (node.children.length === 0) {
                 return;
             }else{
 
-				// recurse through the children
-				for(var i = 0; i < node.children.length; i++) {
-					var child = node.children[i];
-					this.handleNode(child, types, node);
-				}
+                // recurse through the children
+                for(var i = 0; i < node.children.length; i++) {
+                    var child = node.children[i];
+                    this.handleNode(child, types, node);
+                }
 			
-			}           
+            }           
             
         }
 
         
     };
 
-   this.generateNodeHashRecursive = function (err, root) {
+    this.generateNodeHashRecursive = function (err, root) {
 
         if (err) {
             console.log('Error when calling getSceneGraph', err);
             return;
         }
-		classScope.nodesRaw = root;
+        classScope.nodesRaw = root;
       
         var types = [classScope.nodeTypeMatrixtransform, classScope.nodeTypeGeometry, classScope.nodeTypeGroup, classScope.nodeTypeRigGeometry];
 
@@ -416,29 +416,29 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
-   };
-   this.logObjectkeysAndValues = function (objectToLog) {
-       if (Array.isArray(objectToLog)) {
-           for (var i = 0; i < objectToLog.length; i++) {
-               console.log("array index: " + i + " = " + objectToLog[i]);
-           }
+    };
+    this.logObjectkeysAndValues = function (objectToLog) {
+        if (Array.isArray(objectToLog)) {
+            for (var i = 0; i < objectToLog.length; i++) {
+                console.log("array index: " + i + " = " + objectToLog[i]);
+            }
 
-       } else {
+        } else {
 
-           for (var prop in objectToLog) {
-               console.log(prop + " = " + objectToLog[prop]);
-           }
-       }
-   };
+            for (var prop in objectToLog) {
+                console.log(prop + " = " + objectToLog[prop]);
+            }
+        }
+    };
 
-   this.annotationSelectedInViewer = function (index) {
+    this.annotationSelectedInViewer = function (index) {
 
-       classScope.currentAnnotationIndex = index;
-       classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
-       classScope.dispatchEvent(classScope.EVENT_ANNOTATION_SELECTED_IN_SCENE, classScope.currentAnnotationObject);
-   }
+        classScope.currentAnnotationIndex = index;
+        classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
+        classScope.dispatchEvent(classScope.EVENT_ANNOTATION_SELECTED_IN_SCENE, classScope.currentAnnotationObject);
+    }
 
-   this.generateAnnotationControls = function (err, annotations) {
+    this.generateAnnotationControls = function (err, annotations) {
         if (err) {
             console.log('Error when calling getAnnotationList');
             return;
@@ -619,7 +619,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     }
 
     this.setPosition = function (key, position, duration, easing, callback) {
-        duration = duration || 1;
+        if (duration === null || duration === undefined) {
+            duration = 1;
+        }
+       
         var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
         var dataObjectRefSingle;
         if (dataObjectRef !== null && dataObjectRef !== undefined) {
