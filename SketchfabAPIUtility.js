@@ -432,7 +432,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     };
 
     this.annotationChanged = function (index) {
-
+        if (isNaN(index)) {
+            return;
+        }
         classScope.currentAnnotationIndex = index;
         classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
         classScope.dispatchEvent(classScope.EVENT_ANNOTATION_CHANGED, classScope.currentAnnotationObject);
