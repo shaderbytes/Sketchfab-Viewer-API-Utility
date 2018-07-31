@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "2.0.0.3";
+    this.version = "2.0.0.4";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -96,7 +96,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.EVENT_INITIALIZED = "event_initialized";
     this.EVENT_CLICK = "event_click";
     this.EVENT_TEXTURE_APPLIED = "event_texture_applied";
-    this.EVENT_ANNOTATION_SELECTED_IN_SCENE = "event_annotation_selected_in_scene";
+    this.EVENT_ANNOTATION_CHANGED = "event_annotation_changed";
 
     this.create = function () {
        
@@ -431,11 +431,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
-    this.annotationSelectedInViewer = function (index) {
+    this.annotationChanged = function (index) {
 
         classScope.currentAnnotationIndex = index;
         classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
-        classScope.dispatchEvent(classScope.EVENT_ANNOTATION_SELECTED_IN_SCENE, classScope.currentAnnotationObject);
+        classScope.dispatchEvent(classScope.EVENT_ANNOTATION_CHANGED, classScope.currentAnnotationObject);
     }
 
     this.generateAnnotationControls = function (err, annotations) {
@@ -457,7 +457,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.annotationPreprocessCompleted = true;
 
         if (classScope.annotationLength > 0) {
-            classScope.api.addEventListener('annotationSelect', classScope.annotationSelectedInViewer);
+            classScope.api.addEventListener('annotationSelect', classScope.annotationChanged);
         }
 
         classScope.validateUtilGenerationPreprocess();
