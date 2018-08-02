@@ -245,26 +245,34 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
 
     }
+    // this function will not just reference the actual parent but will rather transverse the object graph until a parent of type group is found
+    this.getParentGroup = function (node) {
+        var parentGroup = node.parent;
+        if (parentGroup !== null && parentGroup !== undefined) {
+            while (parentGroup.type !== classScope.nodeTypeGroup) {
+                parentGroup = parentGroup.parent;
+            }
+        }
+        return parentGroup;
+    }
+    // this function will not just reference the actual parent but will rather transverse the object graph until a parent of type Matrix Transform is found
+    this.getParentMatrixTransform = function (node) {
+        var parentMatrixTransform = node.parent;
+        if (parentMatrixTransform !== null && parentMatrixTransform !== undefined) {
+            while (parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform) {
+                parentMatrixTransform = parentMatrixTransform.parent;
+            }
+        }
+        return parentMatrixTransform;
+    }
 
 
     this.onClick = function (e) {
       
-        var node = classScope.getNodeObject(e.instanceID);
-        var parentGroup = node.parent;
-        if(parentGroup !== null && parentGroup !== undefined){
-            while(parentGroup.type !== classScope.nodeTypeGroup ){
-                parentGroup = parentGroup.parent;		
-            }
-        }
-        var parentMatrixTransform = node.parent;
-        if(parentMatrixTransform !== null && parentMatrixTransform !== undefined){
-            while(parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform ){
-                parentMatrixTransform = parentMatrixTransform.parent;		
-            }
-        }
+        var node = classScope.getNodeObject(e.instanceID);    
         e.node = node;
-        e.parentGroup = parentGroup;
-        e.parentMatrixTransform = parentMatrixTransform;
+        e.parentGroup = classScope.getParentGroup(node);
+        e.parentMatrixTransform = classScope.getParentMatrixTransform(node);
         classScope.dispatchEvent(classScope.EVENT_CLICK, e);
        
     };
