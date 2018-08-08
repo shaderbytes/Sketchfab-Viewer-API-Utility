@@ -268,6 +268,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
 
     this.onClick = function (e) {
+        if (e.instanceID === null || e.instanceID === undefined || e.instanceID === -1) {
+            return;
+        }
       
         var node = classScope.getNodeObject(e.instanceID);    
         e.node = node;
