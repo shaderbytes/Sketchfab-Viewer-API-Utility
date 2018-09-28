@@ -68,8 +68,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.vectorBackward = [0, 1, 0];
     this.vectorLeft = [-1,0, 0];
     this.vectorRight = [1, 0, 0];
-    this.vectorUp = [0, 0, 1];
-    this.vectorDown = [0, 0, -1];
+    this.vectorUp = [0, 0, 0.999];
+    this.vectorDown = [0, 0, -0.999];
 
     this.textureLoadingCount = 0;
     this.gamma = 2.4;
