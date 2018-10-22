@@ -815,6 +815,30 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        
     }
 
+    this.logChannelPropertiesAndValues = function (materialName, channelPropertyName) {
+
+        console.log("----------------");
+        console.log("Channel " + channelPropertyName);
+        console.log("----------------");
+
+        var currentChannel = classScope.getChannelObject(classScope.getMaterialObject(materialName), channelPropertyName);
+        classScope.logPropertiesAndValuesRecursive("", "", currentChannel);
+    }
+
+    this.logPropertiesAndValuesRecursive = function(s, space, ob) {
+        for (prop in ob) {
+            if (ob[prop] === Object(ob[prop])) {
+                console.log(prop + " : ");
+                var previousSpace = space;
+                space += "      ";
+                LogPropertiesAndValues(s, space, ob[prop]);
+                space = previousSpace;
+
+            } else {
+                console.log(space + prop + " : " + ob[prop]);
+            }
+        }
+    }
    
 
     this.setFactor = function (materialName, channelPropertyName, factor, performCacheReset) {
