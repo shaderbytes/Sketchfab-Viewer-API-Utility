@@ -665,7 +665,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
             }
 
-            classScope.api.translate(dataObjectRefSingle.instanceID, position, duration, easing, onTranslate);
+            classScope.api.translate(dataObjectRefSingle.instanceID, position, { "duration": duration, "easing": easing }, onTranslate);
             
 
         }
@@ -701,7 +701,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             dataObjectRefSingle.worldMatrix[12] = newPosition[0];
             dataObjectRefSingle.worldMatrix[13] = newPosition[1];
             dataObjectRefSingle.worldMatrix[14] = newPosition[2];
-            classScope.api.translate(dataObjectRefSingle.instanceID, newPosition, duration, easing, callback);
+            classScope.api.translate(dataObjectRefSingle.instanceID, newPosition, { "duration": duration, "easing": easing }, callback);
 
         }
 
