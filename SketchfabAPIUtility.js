@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "2.0.0.7";
+    this.version = "2.0.0.8";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -1037,7 +1037,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             classScope.applyMaterialUIDPending(cacheKey);
             classScope.dispatchEvent(classScope.EVENT_TEXTURE_LOADED, { "cacheKey": cacheKey });
         }
-        classScope.api.addTexture(url, addTextureCallback);
+
+        // validate if the uid exists and if so rather use update texture , otherwise use addTexture
+        if (classScope.textureCache[cacheKey] !== null && classScope.textureCache[cacheKey] !== undefined) {
+            classScope.api.updateTexture(url, classScope.textureCache[cacheKey], addTextureCallback);
+        } else {
+            classScope.api.addTexture(url, addTextureCallback);
+        }
     };
 
     this.resetTexture = function (materialName, channelPropertyName) {
