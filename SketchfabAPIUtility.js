@@ -1053,22 +1053,22 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     };
 
 
-    this.setColor = function (materialName, channelPropertyName, hex,performCacheReset) {
+    this.setColor = function (materialName, channelName, channelPropertyName, hex, performCacheReset) {
+        channelPropertyName = channelPropertyName || "color";
+        var cacheKey = channelPropertyName + "cached";
        
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
         if (materialObjectRef !== null && materialObjectRef !== undefined) {
-            var channelObjectRef = classScope.getChannelObject(materialObjectRef,channelPropertyName);
+            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
-                    if (channelObjectRef.colorIsCached !== undefined && channelObjectRef.colorIsCached !==null) {
-                        channelObjectRef.color[0] = channelObjectRef.colorCached[0];
-                        channelObjectRef.color[1] = channelObjectRef.colorCached[1];
-                        channelObjectRef.color[2] = channelObjectRef.colorCached[2];
-                        classScope.api.setMaterial(materialObjectRef, function () {
-
-                        });
+                    if (channelObjectRef[cacheKey] !== undefined && channelObjectRef[cacheKey] !== null) {
+                        channelObjectRef[channelPropertyName][0] = channelObjectRef[cacheKey][0];
+                        channelObjectRef[channelPropertyName][1] = channelObjectRef[cacheKey][1];
+                        channelObjectRef[channelPropertyName][2] = channelObjectRef[cacheKey][2];
+                        classScope.api.setMaterial(materialObjectRef);
                         return;
                     } else {
                         if (classScope.enableDebugLogging) {
@@ -1087,27 +1087,27 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
               
 
-                if (channelObjectRef.color === null || channelObjectRef.color === undefined ) {
+                if (channelObjectRef[channelPropertyName] === null || channelObjectRef[channelPropertyName] === undefined ) {
                    
-                    channelObjectRef.color = [1,1,1];
+                    channelObjectRef[channelPropertyName] = [1,1,1];
                 } 
 
 
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                if (channelObjectRef.colorIsCached === undefined || channelObjectRef.colorIsCached === null) {
+                if (channelObjectRef[cacheKey] === undefined || channelObjectRef[cacheKey] === null) {
                    
-                    channelObjectRef.colorIsCached = true;
-                    channelObjectRef.colorCached = [];
-                    channelObjectRef.colorCached[0] = channelObjectRef.color[0];
-                    channelObjectRef.colorCached[1] = channelObjectRef.color[1];
-                    channelObjectRef.colorCached[2] = channelObjectRef.color[2];                   
+                   
+                    channelObjectRef[cacheKey] = [];
+                    channelObjectRef[cacheKey][0] = channelObjectRef[channelPropertyName][0];
+                    channelObjectRef[cacheKey][1] = channelObjectRef[channelPropertyName][1];
+                    channelObjectRef[cacheKey][2] = channelObjectRef[channelPropertyName][2];
 
 
                 }
 
-                channelObjectRef.color[0] = classScope.srgbToLinear( parseInt(result[1], 16) / 255);
-                channelObjectRef.color[1] = classScope.srgbToLinear(parseInt(result[2], 16) / 255);
-                channelObjectRef.color[2] = classScope.srgbToLinear(parseInt(result[3], 16) / 255);
+                channelObjectRef[channelPropertyName][0] = classScope.srgbToLinear(parseInt(result[1], 16) / 255);
+                channelObjectRef[channelPropertyName][1] = classScope.srgbToLinear(parseInt(result[2], 16) / 255);
+                channelObjectRef[channelPropertyName][2] = classScope.srgbToLinear(parseInt(result[3], 16) / 255);
                 classScope.api.setMaterial(materialObjectRef);
 
             }
@@ -1115,8 +1115,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     };
 
-    this.resetColor = function (materialName, channelPropertyName) {
-        classScope.setColor(materialName, channelPropertyName, "", true);
+    this.resetColor = function (materialName,channelName, channelPropertyName) {
+        classScope.setColor(materialName, channelName, channelPropertyName, "", true);
 
     };
 
