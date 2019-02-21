@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "2.0.0.9";
+    this.version = "3.0.0.0";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -92,6 +92,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.nodePreprocessCompleted = false;
     this.annotationPreprocessCompleted = false;
     this.animationPreprocessCompleted = false;
+    this.sceneTexturesPreprocessCompleted = false;
 
     this.EVENT_INITIALIZED = "event_initialized";
     this.EVENT_CLICK = "event_click";
@@ -129,9 +130,30 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.getSceneGraph(classScope.generateNodeHashRecursive);
         classScope.api.getAnnotationList(classScope.generateAnnotationControls);
         classScope.api.getAnimations(classScope.generateAnimationControls);
+        classScope.api.getTextureList(classScope.getSceneTextures);
         //possible other calls here ...
 
        
+
+    };
+
+   
+    this.getSceneTextures = function (err, textures) {
+        if (err) {
+            console.log('Error when calling getSceneTextures');
+            return;
+        }
+        if (classScope.enableDebugLogging) {
+            console.log("textures listing");
+            console.log(textures);
+        }
+        for (var i = 0; i < textures.length; i++) {
+            var UIDKey = textures[i].name.split(".")[0];
+            classScope.textureCache[UIDKey] =  textures[i].uid;
+        }
+
+        classScope.sceneTexturesPreprocessCompleted = true;
+        classScope.validateUtilGenerationPreprocess();
 
     };
 
@@ -140,7 +162,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.validateUtilGenerationPreprocess = function () {
 
         //validate all used preprocess flags
-        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted && classScope.animationPreprocessCompleted) {
+        if (classScope.materialPreprocessCompleted && classScope.nodePreprocessCompleted && classScope.annotationPreprocessCompleted && classScope.animationPreprocessCompleted && classScope.sceneTexturesPreprocessCompleted) {
             classScope.isInitialized = true;
             classScope.dispatchEvent(classScope.EVENT_INITIALIZED, true);
           
@@ -245,25 +267,25 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
 
     }
-    // this function will not just reference the actual parent but will rather transverse the object graph until a parent of type group is found
-    this.getParentGroup = function (node) {
-        var parentGroup = node.parent;
-        if (parentGroup !== null && parentGroup !== undefined) {
-            while (parentGroup.type !== classScope.nodeTypeGroup) {
-                parentGroup = parentGroup.parent;
+    // this function will bubble the object graph until an object of type group is found
+    this.getfirstAncestorOfTypeGroup = function (node) {
+        var firstAncestorOfTypeGroup = node.parent;
+        if (firstAncestorOfTypeGroup !== null && firstAncestorOfTypeGroup !== undefined) {
+            while (firstAncestorOfTypeGroup.type !== classScope.nodeTypeGroup) {
+                firstAncestorOfTypeGroup = firstAncestorOfTypeGroup.parent;
             }
         }
-        return parentGroup;
+        return firstAncestorOfTypeGroup;
     }
-    // this function will not just reference the actual parent but will rather transverse the object graph until a parent of type Matrix Transform is found
-    this.getParentMatrixTransform = function (node) {
-        var parentMatrixTransform = node.parent;
-        if (parentMatrixTransform !== null && parentMatrixTransform !== undefined) {
-            while (parentMatrixTransform.type !== classScope.nodeTypeMatrixtransform) {
-                parentMatrixTransform = parentMatrixTransform.parent;
+    // this function bubble the object graph until an object of type Matrix Transform is found
+    this.getfirstAncestorOfTypeMatrixTransform = function (node) {
+        var firstAncestorOfTypeMatrixTransform = node.parent;
+        if (firstAncestorOfTypeMatrixTransform !== null && firstAncestorOfTypeMatrixTransform !== undefined) {
+            while (firstAncestorOfTypeMatrixTransform.type !== classScope.nodeTypeMatrixtransform) {
+                firstAncestorOfTypeMatrixTransform = firstAncestorOfTypeMatrixTransform.parent;
             }
         }
-        return parentMatrixTransform;
+        return firstAncestorOfTypeMatrixTransform;
     }
 
 
@@ -274,8 +296,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
       
         var node = classScope.getNodeObject(e.instanceID);    
         e.node = node;
-        e.parentGroup = classScope.getParentGroup(node);
-        e.parentMatrixTransform = classScope.getParentMatrixTransform(node);
+        e.firstAncestorOfTypeGroup = classScope.getfirstAncestorOfTypeGroup(node);
+        e.firstAncestorOfTypeMatrixTransform = classScope.getfirstAncestorOfTypeMatrixTransform(node);
         classScope.dispatchEvent(classScope.EVENT_CLICK, e);
        
     };
@@ -776,19 +798,19 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return materialObjectRef;
     };
 
-    this.getChannelObject = function (materialObjectRef, channelPropertyName) {
+    this.getChannelObject = function (materialObjectRef, channelName) {
        
-        var channelObjectRef = materialObjectRef.channels[channelPropertyName];
+        var channelObjectRef = materialObjectRef.channels[channelName];
         if (channelObjectRef === null || channelObjectRef === undefined ) {
-            console.error('a call to getChannelObject using channelPropertyName name ' + channelPropertyName + ' has failed , no such channelPropertyName found');
+            console.error('a call to getChannelObject using channelName name ' + channelName + ' has failed , no such channelName found');
             return null;
         }
         return channelObjectRef;
     };
 
-    this.setChannelProperties = function (materialName, channelPropertyName, channelObjectDefaults) {
+    this.setChannelProperties = function (materialName, channelName, channelObjectDefaults) {
         var materialObjectRef = classScope.getMaterialObject(materialName);
-        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setChannelPropertiesActual(channelObjectRef, channelObjectDefaults);
     }
 
@@ -799,9 +821,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     }
 
     //-----------------------------------------------------------------------------------------
-    this.setTextureProperties = function (materialName, channelPropertyName, textureObjectDefaults) {
+    this.setTextureProperties = function (materialName, channelName, textureObjectDefaults) {
         var materialObjectRef = classScope.getMaterialObject(materialName);
-        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setTexturePropertiesActual(channelObjectRef, textureObjectDefaults);
     }
 
@@ -815,13 +837,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
        
     }
 
-    this.logChannelPropertiesAndValues = function (materialName, channelPropertyName) {
+    this.logChannelPropertiesAndValues = function (materialName, channelName) {
 
         console.log("----------------");
-        console.log("Channel " + channelPropertyName);
+        console.log("Channel " + channelName);
         console.log("----------------");
 
-        var currentChannel = classScope.getChannelObject(classScope.getMaterialObject(materialName), channelPropertyName);
+        var currentChannel = classScope.getChannelObject(classScope.getMaterialObject(materialName), channelName);
         classScope.logPropertiesAndValuesRecursive("", "", currentChannel);
     }
 
@@ -841,7 +863,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     }
    
 
-    this.setFactor = function (materialName, channelPropertyName, factor, performCacheReset) {
+    this.setFactor = function (materialName, channelName, factor, performCacheReset) {
         if (factor === null) {
             console.error('a call to setAlpha needs to pass both the material name and the factor value to set the alpha');
             return;
@@ -850,7 +872,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
         if (materialObjectRef !== null) {
-            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
@@ -881,8 +903,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     };
 
-    this.resetFactor = function (materialName, channelPropertyName) {
-        classScope.setFactor(materialName, channelPropertyName, 0, true);
+    this.resetFactor = function (materialName, channelName) {
+        classScope.setFactor(materialName, channelName, 0, true);
 
     };
 
@@ -894,11 +916,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.setFactor(materialName, classScope.Opacity, 0, true);
 
     };
-    this.resetMaterialUID = function (materialName, channelPropertyName) {
+    this.resetMaterialUID = function (materialName, channelName) {
 
         var materialObjectRef = classScope.getMaterialObject(materialName);
         if (materialObjectRef !== null && materialObjectRef !== undefined) {
-            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (channelObjectRef.textureIsCached !== undefined && channelObjectRef.textureIsCached !== null) {
@@ -914,39 +936,42 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     };
 
     
-    this.setMaterialUIDPending = function (materialName, channelPropertyName, cacheKey, textureObjectDefaults, channelObjectDefaults) {
+    this.setMaterialUIDPending = function (materialName, channelName, UIDKey, textureObjectDefaults, channelObjectDefaults) {
 
-        cacheKey = cacheKey || "unset_cacheKey";
+        if (UIDKey === null || UIDKey === undefined || UIDKey === "") {
+            error.log('a call to "setMaterialUIDPending" has been aborted. The argument UIDKey must have a valid string value so this can be used to look up the UID at a later point');
+            return;
+        }
 
         var ob = {};
         ob.materialName = materialName;
-        ob.channelPropertyName = channelPropertyName;
+        ob.channelName = channelName;
         ob.textureObjectDefaults = textureObjectDefaults;
         ob.channelObjectDefaults = channelObjectDefaults;
 
-        var storage = classScope.materialsUIDPending[cacheKey];
+        var storage = classScope.materialsUIDPending[UIDKey];
         if (storage === null || storage === undefined) {
-            storage = classScope.materialsUIDPending[cacheKey] = [];
+            storage = classScope.materialsUIDPending[UIDKey] = [];
         }
 
         storage.push(ob);
 
     };
-    this.applyMaterialUIDPending = function (cacheKey) {
+    this.applyMaterialUIDPending = function (UIDKey) {
 
-        if (cacheKey !== null && cacheKey !== undefined && cacheKey !== "") {
-            var storage = classScope.materialsUIDPending[cacheKey];
-            var uid = classScope.textureCache[cacheKey];
+        if (UIDKey !== null && UIDKey !== undefined && UIDKey !== "") {
+            var storage = classScope.materialsUIDPending[UIDKey];
+            var uid = classScope.textureCache[UIDKey];
             if (storage !== null && storage !== undefined) {
                 for (var i = 0; i < storage.length; i++) {
                     var ob = storage[i];
                     var materialName = ob.materialName;
-                    var channelPropertyName = ob.channelPropertyName;
+                    var channelName = ob.channelName;
                     var textureObjectDefaults = ob.textureObjectDefaults;
                     var channelObjectDefaults = ob.channelObjectDefaults;
                     var materialObjectRef = classScope.getMaterialObject(materialName);
                     if (materialObjectRef !== null && materialObjectRef !== undefined) {
-                        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelPropertyName);
+                        var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
                         if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                             //remove texture
@@ -1006,56 +1031,75 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                     }
                 }
 
-                classScope.materialsUIDPending[cacheKey] = null;
+                classScope.materialsUIDPending[UIDKey] = null;
                 storage = null;
-                delete classScope.materialsUIDPending[cacheKey];
+                delete classScope.materialsUIDPending[UIDKey];
 
-                classScope.dispatchEvent(classScope.EVENT_TEXTURE_APPLIED, cacheKey);
+                classScope.dispatchEvent(classScope.EVENT_TEXTURE_APPLIED, UIDKey);
             }
         }
 
     };
 
-    this.removeTexture = function (cacheKey) {
-        cacheKey = cacheKey || "unset_cacheKey";
-        classScope.textureCache[cacheKey] = "";
-        classScope.applyMaterialUIDPending(cacheKey);
+    this.removeTextureFromMaterialChannel = function (materialName,channelName) {
 
+        var materialObjectRef = classScope.getMaterialObject(materialName);
+        if (materialObjectRef !== null && materialObjectRef !== undefined) {
+            var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
+            if (channelObjectRef !== null && channelObjectRef !== undefined) {
+                //hack as a channel could possibly have no color object if it had a texture assigned in the editor , so when removing the texture it will not know how to render the object
+                if (channelObjectRef.color === null || channelObjectRef.color === undefined) {
+                    classScope.setColor(materialName, channelName, null, "#ffffff");
+                }
+               channelObjectRef.texture = null;
+               delete channelObjectRef.texture;
+               classScope.api.setMaterial(materialObjectRef);
+            }
+        }
     };
 
-    this.addTexture = function (url, cacheKey, useCashing) {
+  
+
+    this.addTexture = function (url, UIDKey, useCashing) {
         useCashing = useCashing || false;
-        cacheKey = cacheKey || "unset_cacheKey";
+        if(UIDKey === null || UIDKey === undefined || UIDKey === ""){
+            error.log('a call to "addTexture" has been aborted. The argument UIDKey must have a valid string value so this texture has a means to be looked up at a later point');
+            return;
+        }
+       
         if (useCashing) {
-            if (classScope.textureCache[cacheKey] !== null && classScope.textureCache[cacheKey] !== undefined) {               
-                classScope.applyMaterialUIDPending(cacheKey);
+            if (classScope.textureCache[UIDKey] !== null && classScope.textureCache[UIDKey] !== undefined) {   
+                if (classScope.enableDebugLogging) {
+                    console.log('a call to addTexture found an existing textureCache for UIDKey "'+UIDKey+'", applyMaterialUIDPending called immediately.');
+                }
+                classScope.applyMaterialUIDPending(UIDKey);
                 return;
             }
         }
         function addTextureCallback(err, uid) {
-            classScope.textureCache[cacheKey] = uid;
-            classScope.applyMaterialUIDPending(cacheKey);
-            classScope.dispatchEvent(classScope.EVENT_TEXTURE_LOADED, { "cacheKey": cacheKey });
+            classScope.textureCache[UIDKey] = uid;
+            classScope.applyMaterialUIDPending(UIDKey);
+            classScope.dispatchEvent(classScope.EVENT_TEXTURE_LOADED, { "UIDKey": UIDKey });
         }
 
         // validate if the uid exists and if so rather use update texture , otherwise use addTexture
-        if (classScope.textureCache[cacheKey] !== null && classScope.textureCache[cacheKey] !== undefined) {
-            classScope.api.updateTexture(url, classScope.textureCache[cacheKey], addTextureCallback);
+        if (classScope.textureCache[UIDKey] !== null && classScope.textureCache[UIDKey] !== undefined) {
+            classScope.api.updateTexture(url, classScope.textureCache[UIDKey], addTextureCallback);
         } else {
             classScope.api.addTexture(url, addTextureCallback);
         }
     };
 
-    this.resetTexture = function (materialName, channelPropertyName) {
+    this.resetTexture = function (materialName, channelName) {
 
-        classScope.resetMaterialUID(materialName, channelPropertyName);
+        classScope.resetMaterialUID(materialName, channelName);
 
     };
 
 
     this.setColor = function (materialName, channelName, channelPropertyName, hex, performCacheReset) {
         channelPropertyName = channelPropertyName || "color";
-        var cacheKey = channelPropertyName + "cached";
+        var propertyCacheKey = channelPropertyName + "cached";
        
         performCacheReset = performCacheReset || false;
         var materialObjectRef = classScope.getMaterialObject(materialName);
@@ -1064,10 +1108,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
 
                 if (performCacheReset) {
-                    if (channelObjectRef[cacheKey] !== undefined && channelObjectRef[cacheKey] !== null) {
-                        channelObjectRef[channelPropertyName][0] = channelObjectRef[cacheKey][0];
-                        channelObjectRef[channelPropertyName][1] = channelObjectRef[cacheKey][1];
-                        channelObjectRef[channelPropertyName][2] = channelObjectRef[cacheKey][2];
+                    if (channelObjectRef[propertyCacheKey] !== undefined && channelObjectRef[propertyCacheKey] !== null) {
+                        channelObjectRef[channelPropertyName][0] = channelObjectRef[propertyCacheKey][0];
+                        channelObjectRef[channelPropertyName][1] = channelObjectRef[propertyCacheKey][1];
+                        channelObjectRef[channelPropertyName][2] = channelObjectRef[propertyCacheKey][2];
                         classScope.api.setMaterial(materialObjectRef);
                         return;
                     } else {
@@ -1094,13 +1138,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
 
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                if (channelObjectRef[cacheKey] === undefined || channelObjectRef[cacheKey] === null) {
+                if (channelObjectRef[propertyCacheKey] === undefined || channelObjectRef[propertyCacheKey] === null) {
                    
                    
-                    channelObjectRef[cacheKey] = [];
-                    channelObjectRef[cacheKey][0] = channelObjectRef[channelPropertyName][0];
-                    channelObjectRef[cacheKey][1] = channelObjectRef[channelPropertyName][1];
-                    channelObjectRef[cacheKey][2] = channelObjectRef[channelPropertyName][2];
+                    channelObjectRef[propertyCacheKey] = [];
+                    channelObjectRef[propertyCacheKey][0] = channelObjectRef[channelPropertyName][0];
+                    channelObjectRef[propertyCacheKey][1] = channelObjectRef[channelPropertyName][1];
+                    channelObjectRef[propertyCacheKey][2] = channelObjectRef[channelPropertyName][2];
 
 
                 }
