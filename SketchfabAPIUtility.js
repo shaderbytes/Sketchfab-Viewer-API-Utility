@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "3.0.0.0";
+    this.version = "3.0.0.1";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -369,6 +369,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             var n = classScope.nodeHash[classScope.nodeTypeCurrent];
 
             node.isVisible = true;
+            node.localMatrixCached = node.localMatrix;
             node.parent = parent;
             node.index = 0;
 
@@ -594,7 +595,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             }
 
            
-            var target = [dataObjectRefSingle.worldMatrix[12], dataObjectRefSingle.worldMatrix[13], dataObjectRefSingle.worldMatrix[14]];
+            var target = [dataObjectRefSingle.localMatrix[12], dataObjectRefSingle.localMatrix[13], dataObjectRefSingle.localMatrix[14]];
             var eye = [target[0] + (direction[0] * distance), target[1] + (direction[1] * distance), target[2] + (direction[2] * distance)];
             if (offset !== null && offset !== undefined) {
                 if (Array.isArray(offset)) {
@@ -642,15 +643,18 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
         if (dataObjectRef !== null && dataObjectRef !== undefined) {
             function matrixRefreshed(err, matrices) {
-
+                console.log("matrixRefreshed called");
                 if (err) {
                     console.log("an error occured while called refreshMatrix. Error: " + err);
                     return;
                 }
-               
-                dataObjectRef.worldMatrix = matrices.world;
-                dataObjectRef.worldMatrixisCached = null;
+                for (var prop in matrices) {
+                    console.log(prop + " = " + matrices[prop]);
+                }              
+                dataObjectRef.localMatrix = matrices.local;
+                dataObjectRef.localMatrixisCached = null;
             }
+            console.log("about to call getMatrix");
             classScope.api.getMatrix(dataObjectRef.instanceID, matrixRefreshed);
         }
 
@@ -711,23 +715,84 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             } else {
                 dataObjectRefSingle = dataObjectRef;
             }
-            if (dataObjectRefSingle.worldMatrixisCached === undefined || dataObjectRefSingle.worldMatrixisCached === null) {
-                dataObjectRefSingle.worldMatrixisCached = true;
-                dataObjectRefSingle.worldMatrixCached = dataObjectRefSingle.worldMatrix;
-            
-            }
            
-            var currentPosition = [dataObjectRefSingle.worldMatrix[12], dataObjectRefSingle.worldMatrix[13], dataObjectRefSingle.worldMatrix[14]];
+            var currentPosition = [dataObjectRefSingle.localMatrix[12], dataObjectRefSingle.localMatrix[13], dataObjectRefSingle.localMatrix[14]];
             var newPosition = [currentPosition[0] + (direction[0] * distance), currentPosition[1] + (direction[1] * distance), currentPosition[2] + (direction[2] * distance)];
             //write new position back into matrix
-            dataObjectRefSingle.worldMatrix[12] = newPosition[0];
-            dataObjectRefSingle.worldMatrix[13] = newPosition[1];
-            dataObjectRefSingle.worldMatrix[14] = newPosition[2];
+            dataObjectRefSingle.localMatrix[12] = newPosition[0];
+            dataObjectRefSingle.localMatrix[13] = newPosition[1];
+            dataObjectRefSingle.localMatrix[14] = newPosition[2];
             classScope.api.translate(dataObjectRefSingle.instanceID, newPosition, { "duration": duration, "easing": easing }, callback);
 
         }
 
     };
+
+    this.rotateOnAxis = function (key, angle,axis) {
+        var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
+        var dataObjectRefSingle;
+        if (dataObjectRef !== null && dataObjectRef !== undefined) {
+            if (Array.isArray(dataObjectRef)) {
+                console.log("multiple nodes returned during call to rotateOnAxisX, first node will be used");
+                dataObjectRefSingle = dataObjectRef[0];
+            } else {
+                dataObjectRefSingle = dataObjectRef;
+            }
+        }
+       
+        var rad = angle * 0.0174533;
+        var out = [];
+        var a = dataObjectRefSingle.localMatrix;      
+       
+        var x = axis[0], y = axis[1], z = axis[2];
+        var len = Math.hypot(x,y,z);
+        var s, c, t;
+        var a00, a01, a02, a03;
+        var a10, a11, a12, a13;
+        var a20, a21, a22, a23;
+        var b00, b01, b02;
+        var b10, b11, b12;
+        var b20, b21, b22;
+        if (len < 0.000001) { return null; }
+        len = 1 / len;
+        x *= len;
+        y *= len;
+        z *= len;
+        s = Math.sin(rad);
+        c = Math.cos(rad);
+        t = 1 - c;
+        a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
+        a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
+        a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
+        // Construct the elements of the rotation matrix
+        b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
+        b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
+        b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
+        // Perform rotation-specific matrix multiplication
+        out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+        out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+        out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+        out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+        out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+        out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+        out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+        out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+        out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+        out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+        out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+        out[11] = a03 * b20 + a13 * b21 + a23 * b22;
+        if (a !== out) { // If the source and destination differ, copy the unchanged last row
+            out[12] = a[12];
+            out[13] = a[13];
+            out[14] = a[14];
+            out[15] = a[15];
+        }
+       
+
+
+       classScope.api.setMatrix(dataObjectRefSingle.instanceID, out);      
+       //dataObjectRefSingle.localMatrix = out;
+    }
 
 
     this.setNodeVisibility = function (key, makeVisible, nodeIndex, currentNodeType) {
@@ -812,6 +877,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         var materialObjectRef = classScope.getMaterialObject(materialName);
         var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setChannelPropertiesActual(channelObjectRef, channelObjectDefaults);
+        classScope.api.setMaterial(materialObjectRef); // call to update material added here , for users to see effects without having to call to update the material themselves
     }
 
     this.setChannelPropertiesActual = function (channelObjectRef, channelObjectDefaults) {
@@ -821,7 +887,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     }
 
     //-----------------------------------------------------------------------------------------
-    this.setTextureProperties = function (materialName, channelName, textureObjectDefaults) {
+    this.setTextureProperties = function (materialName, channelName, textureObjectDefaults) {// this function does not update the material , it just sets the new channel values locally , this would then be picked up by some later calls to update material, like with pending material calls for texture handling etc..
         var materialObjectRef = classScope.getMaterialObject(materialName);
         var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setTexturePropertiesActual(channelObjectRef, textureObjectDefaults);
@@ -960,6 +1026,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.applyMaterialUIDPending = function (UIDKey) {
 
         if (UIDKey !== null && UIDKey !== undefined && UIDKey !== "") {
+
+
+
+
             var storage = classScope.materialsUIDPending[UIDKey];
             var uid = classScope.textureCache[UIDKey];
             if (storage !== null && storage !== undefined) {
@@ -977,12 +1047,24 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                             //remove texture
                             if (uid === "") {
 
+                                //add color if it does not exist
+                                if (channelObjectRef.color === null || channelObjectRef.color === undefined) {
+                                    classScope.setColor(materialName, channelName, null, "#ffffff");
+                                }
+                               
+
                                 channelObjectRef.texture = null;
                                 delete channelObjectRef.texture;
                                 classScope.api.setMaterial(materialObjectRef);
 
                             } else {
 
+                                //remove color if it exists
+                                if (channelObjectRef.color) {
+                                    channelObjectRef.color = null;
+                                    delete channelObjectRef.color;
+                                }
+                               
 
                                 //this is the cache of the original texture
                                 if (channelObjectRef.textureIsCached === undefined || channelObjectRef.textureIsCached === null) {
@@ -1047,7 +1129,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         if (materialObjectRef !== null && materialObjectRef !== undefined) {
             var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
             if (channelObjectRef !== null && channelObjectRef !== undefined) {
-                //hack as a channel could possibly have no color object if it had a texture assigned in the editor , so when removing the texture it will not know how to render the object
+               //add color if it does not exist
                 if (channelObjectRef.color === null || channelObjectRef.color === undefined) {
                     classScope.setColor(materialName, channelName, null, "#ffffff");
                 }
@@ -1134,7 +1216,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 if (channelObjectRef[channelPropertyName] === null || channelObjectRef[channelPropertyName] === undefined ) {
                    
                     channelObjectRef[channelPropertyName] = [1,1,1];
-                } 
+                }
+
+                //since texture and color cannot exist at the same time in the sketchfab API
+                //test for texture and remove if needed.
+                if (channelObjectRef.texture) {
+                    channelObjectRef.texture = null;
+                    delete channelObjectRef.texture;
+                }
 
 
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
