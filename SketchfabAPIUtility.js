@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "3.0.0.1";
+    this.version = "3.0.0.2";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -24,11 +24,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     
 
     this.nodeTypeMatrixtransform = "MatrixTransform";
-    this.nodeTypeCurrent = classScope.nodeTypeMatrixtransform;
+   
     this.nodeTypeGeometry = "Geometry";
     this.nodeTypeGroup = "Group";
     this.nodeTypeRigGeometry = "RigGeometry";
-    this.nodeNameCurrent = "";
+   
     classScope.nodeHash[classScope.nodeTypeMatrixtransform] = {};
     classScope.nodeHash[classScope.nodeTypeGeometry] = {};
     classScope.nodeHash[classScope.nodeTypeGroup] = {};
@@ -80,7 +80,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     this.annotationLength = 0;
     this.animationClipsLength = 0;
     this.currentAnnotationIndex = -1;
-    this.currentAnnotationObject = {};
+    this.currentAnnotationObject;
 
     this.currentAnimationObject = {};
 
@@ -96,8 +96,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     this.EVENT_INITIALIZED = "event_initialized";
     this.EVENT_CLICK = "event_click";
+    this.EVENT_MOUSE_ENTER = "event_mouse_enter";
+    this.EVENT_MOUSE_LEAVE = "event_mouse_leave";   
     this.EVENT_TEXTURE_APPLIED = "event_texture_applied";
     this.EVENT_ANNOTATION_CHANGED = "event_annotation_changed";
+    this.EVENT_ANNOTATION_MOUSE_ENTER = "event_annotation_mouse_enter";
+    this.EVENT_ANNOTATION_MOUSE_LEAVE = "event_annotation_mouse_leave";
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.create = function () {
        
@@ -108,10 +114,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
         classScope.client.init(classScope.urlID, classScope.clientInitObject);
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.onClientError = function () {
         console.error('a call to "init()" on the sketchfab client object has failed');
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.onClientInit = function (apiRef) {
        
@@ -119,6 +129,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.addEventListener('viewerready', classScope.onViewerReady);
        
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.onViewerReady = function () {
        
@@ -132,11 +144,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.getAnimations(classScope.generateAnimationControls);
         classScope.api.getTextureList(classScope.getSceneTextures);
         //possible other calls here ...
-
-       
-
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
    
     this.getSceneTextures = function (err, textures) {
         if (err) {
@@ -157,7 +167,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     };
 
-   
+    //--------------------------------------------------------------------------------------------------------------------------   
 
     this.validateUtilGenerationPreprocess = function () {
 
@@ -168,6 +178,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
           
         }
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.generateAnimationControls = function (err, animations) {
         if (err) {
@@ -193,6 +205,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.validateUtilGenerationPreprocess();
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.getAnimationObject = function (key) {
         var dataObjectRef = classScope.animationClips[key];
         if (dataObjectRef === null) {
@@ -201,8 +215,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
         return dataObjectRef;
     };
-   
-   
+
+    //--------------------------------------------------------------------------------------------------------------------------   
 
     this.generateMaterialHash = function (err, materials) {
         if (err) {
@@ -224,6 +238,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.validateUtilGenerationPreprocess();
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.addEventListener = function(event,func){
         if (classScope.eventListeners[event] === null || classScope.eventListeners[event] === undefined ) {
             classScope.eventListeners[event] = [];
@@ -235,9 +251,54 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                     return;
                 }
             }
+
+
+            if (event == classScope.EVENT_MOUSE_ENTER) {
+
+                if (classScope.isInitialized) {
+                    classScope.api.addEventListener("nodeMouseEnter", classScope.onNodeMouseEnter, { pick: 'slow' });
+                } else {
+                    console.log("a call to add a mouse enter event listener has been rejected because this utility has not completed initialization");
+                    return;
+                }
+               
+            }
+
+            if (event == classScope.EVENT_MOUSE_LEAVE) {
+
+                if (classScope.isInitialized) {
+                    classScope.api.addEventListener("nodeMouseLeave", classScope.onNodeMouseLeave, { pick: 'slow' });
+                } else {
+                    console.log("a call to add a mouse leave event listener has been rejected because this utility has not completed initialization");
+                    return;
+                }               
+            }
+
+            if (event == classScope.EVENT_ANNOTATION_MOUSE_ENTER) {
+
+                if (classScope.isInitialized) {
+                    classScope.api.addEventListener("annotationMouseEnter", classScope.onAnnotationMouseEnter);
+                } else {
+                    console.log("a call to add a annotation enter event listener has been rejected because this utility has not completed initialization");
+                    return;
+                }
+
+            }
+
+            if (event == classScope.EVENT_ANNOTATION_MOUSE_LEAVE) {
+
+                if (classScope.isInitialized) {
+                    classScope.api.addEventListener("annotationMouseLeave", classScope.onAnnotationMouseLeave);
+                } else {
+                    console.log("a call to add a annotation leave event listener has been rejected because this utility has not completed initialization");
+                    return;
+                }
+            }
         }
         classScope.eventListeners[event].push(func);
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.removeEventListener = function (event, func) {
         if (classScope.eventListeners[event] !== null) {
@@ -251,22 +312,40 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 if (event == classScope.EVENT_CLICK) {
                     classScope.api.removeEventListener("click", classScope.onClick);
                 }
-            }
 
+                if (event == classScope.EVENT_MOUSE_ENTER) {
+                    classScope.api.removeEventListener("nodeMouseEnter", classScope.onNodeMouseEnter);
+                }
+
+                if (event == classScope.EVENT_MOUSE_LEAVE) {
+                    classScope.api.removeEventListener("nodeMouseLeave", classScope.onNodeMouseLeave);
+                }
+
+                if (event == classScope.EVENT_ANNOTATION_MOUSE_ENTER) {
+                    classScope.api.removeEventListener("annotationMouseEnter", classScope.onAnnotationMouseEnter);
+                }
+
+                if (event == classScope.EVENT_ANNOTATION_MOUSE_LEAVE) {
+                    classScope.api.removeEventListener("annotationMouseLeave", classScope.onAnnotationMouseLeave);                  
+                }
+            }
         }
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.dispatchEvent = function (eventName, eventObject) {
-     
+
         var eventArray = classScope.eventListeners[eventName];
-        if (eventArray !== null && eventArray !== undefined) {           
+        if (eventArray !== null && eventArray !== undefined) {
             for (var i = 0; i < eventArray.length; i++) {
                 eventArray[i](eventObject);
 
             }
         }
+    };
 
-    }
+    //--------------------------------------------------------------------------------------------------------------------------
     // this function will bubble the object graph until an object of type group is found
     this.getfirstAncestorOfTypeGroup = function (node) {
         var firstAncestorOfTypeGroup = node.parent;
@@ -277,6 +356,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
         return firstAncestorOfTypeGroup;
     }
+
+    //--------------------------------------------------------------------------------------------------------------------------
     // this function bubble the object graph until an object of type Matrix Transform is found
     this.getfirstAncestorOfTypeMatrixTransform = function (node) {
         var firstAncestorOfTypeMatrixTransform = node.parent;
@@ -286,8 +367,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             }
         }
         return firstAncestorOfTypeMatrixTransform;
-    }
+    };
 
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.onClick = function (e) {
         if (e.instanceID === null || e.instanceID === undefined || e.instanceID === -1) {
@@ -298,9 +380,56 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         e.node = node;
         e.firstAncestorOfTypeGroup = classScope.getfirstAncestorOfTypeGroup(node);
         e.firstAncestorOfTypeMatrixTransform = classScope.getfirstAncestorOfTypeMatrixTransform(node);
-        classScope.dispatchEvent(classScope.EVENT_CLICK, e);
-       
+        classScope.dispatchEvent(classScope.EVENT_CLICK, e);       
     };
+
+    this.onNodeMouseEnter = function (e) {
+        if (e.instanceID === null || e.instanceID === undefined || e.instanceID === -1) {
+            return;
+        }
+
+        var node = classScope.getNodeObject(e.instanceID);
+        e.node = node;
+        e.firstAncestorOfTypeGroup = classScope.getfirstAncestorOfTypeGroup(node);
+        e.firstAncestorOfTypeMatrixTransform = classScope.getfirstAncestorOfTypeMatrixTransform(node);
+        classScope.dispatchEvent(classScope.EVENT_MOUSE_ENTER, e);
+    };
+
+    this.onNodeMouseLeave = function (e) {
+        if (e.instanceID === null || e.instanceID === undefined || e.instanceID === -1) {
+            return;
+        }
+
+        var node = classScope.getNodeObject(e.instanceID);
+        e.node = node;
+        e.firstAncestorOfTypeGroup = classScope.getfirstAncestorOfTypeGroup(node);
+        e.firstAncestorOfTypeMatrixTransform = classScope.getfirstAncestorOfTypeMatrixTransform(node);
+        classScope.dispatchEvent(classScope.EVENT_MOUSE_LEAVE, e);
+    };
+
+    this.onAnnotationMouseEnter = function (index) {
+       
+        if (isNaN(index)) {
+            return;
+        }
+        if (index === -1) {
+            return;
+        }       
+        classScope.dispatchEvent(classScope.EVENT_ANNOTATION_MOUSE_ENTER, classScope.annotations[index]);
+    };
+
+    this.onAnnotationMouseLeave = function (index) {
+       
+        if (isNaN(index)) {
+            return;
+        }
+        if (index === -1) {
+            return;
+        }
+        classScope.dispatchEvent(classScope.EVENT_ANNOTATION_MOUSE_LEAVE, classScope.annotations[index]);
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.validateNodeName = function (nodeNameRef) {
         var nodeName = nodeNameRef.split(" ").join("").toLowerCase();
@@ -347,6 +476,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.generateNodeName = function (node) {
         if (node.name === null || node.name === undefined || node.name === "undefined") {
             return "undefined_" + node.instanceID;
@@ -355,46 +486,46 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
-   
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.handleNode = function(node, types,parent){		
 		
         if (types.indexOf(node.type) >= 0) {
 
 			
-            classScope.nodeTypeCurrent = node.type;
-            classScope.nodeNameCurrent = classScope.generateNodeName(node);
-            node.name = classScope.nodeNameCurrent;
+            var nodeTypeCurrent = node.type;
+            var nodeNameCurrent = classScope.generateNodeName(node);
+            node.name = nodeNameCurrent;
 
-            var n = classScope.nodeHash[classScope.nodeTypeCurrent];
+            var n = classScope.nodeHash[nodeTypeCurrent];
 
             node.isVisible = true;
             node.localMatrixCached = node.localMatrix;
             node.parent = parent;
             node.index = 0;
 
-            if(n[classScope.nodeNameCurrent] !== undefined && n[classScope.nodeNameCurrent] !== null){
+            if(n[nodeNameCurrent] !== undefined && n[nodeNameCurrent] !== null){
 
-                if (!Array.isArray(n[classScope.nodeNameCurrent])) {
+                if (!Array.isArray(n[nodeNameCurrent])) {
 
-                    var nodeTemp = n[classScope.nodeNameCurrent];
-                    n[classScope.nodeNameCurrent] = null;
-                    n[classScope.nodeNameCurrent] = [];
-                    n[classScope.nodeNameCurrent].push(nodeTemp);
-                    nodeTemp.index =  n[classScope.nodeNameCurrent].length-1;
-                    n[classScope.nodeNameCurrent].push(node);
-                    node.index =  n[classScope.nodeNameCurrent].length-1;
-                    classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                    var nodeTemp = n[nodeNameCurrent];
+                    n[nodeNameCurrent] = null;
+                    n[nodeNameCurrent] = [];
+                    n[nodeNameCurrent].push(nodeTemp);
+                    nodeTemp.index =  n[nodeNameCurrent].length-1;
+                    n[nodeNameCurrent].push(node);
+                    node.index =  n[nodeNameCurrent].length-1;
+                    classScope.nodeHashIDMap[node.instanceID] = n[nodeNameCurrent];
 
                 } else {
-                    n[classScope.nodeNameCurrent].push(node);
-                    node.index =  n[classScope.nodeNameCurrent].length-1;
-                    classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                    n[nodeNameCurrent].push(node);
+                    node.index =  n[nodeNameCurrent].length-1;
+                    classScope.nodeHashIDMap[node.instanceID] = n[nodeNameCurrent];
                 }
 
             } else {
-                n[classScope.nodeNameCurrent] = node;
-                classScope.nodeHashIDMap[node.instanceID] = n[classScope.nodeNameCurrent];
+                n[nodeNameCurrent] = node;
+                classScope.nodeHashIDMap[node.instanceID] = n[nodeNameCurrent];
             }
             if(node.children === null || node.children === undefined){
                 return;
@@ -408,14 +539,12 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 for(var i = 0; i < node.children.length; i++) {
                     var child = node.children[i];
                     this.handleNode(child, types, node);
-                }
-			
-            }           
-            
-        }
-
-        
+                }			
+            }            
+        }        
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.generateNodeHashRecursive = function (err, root) {
 
@@ -451,6 +580,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.nodePreprocessCompleted = true;
         classScope.validateUtilGenerationPreprocess();
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.logObjectkeysAndValues = function (objectToLog) {
         if (Array.isArray(objectToLog)) {
             for (var i = 0; i < objectToLog.length; i++) {
@@ -465,17 +597,21 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.annotationChanged = function (index) {
         if (isNaN(index)) {
             return;
         }
         if (index === -1) {
             return;
-        }       
+        }
         classScope.currentAnnotationIndex = index;
         classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
         classScope.dispatchEvent(classScope.EVENT_ANNOTATION_CHANGED, classScope.currentAnnotationObject);
-    }
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.generateAnnotationControls = function (err, annotations) {
         if (err) {
@@ -502,6 +638,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.validateUtilGenerationPreprocess();
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.gotoNextAnnotation = function () {
         if (classScope.annotationLength === 0) return;
         classScope.currentAnnotationIndex++;
@@ -512,6 +650,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.gotoPreviousAnnotation = function () {
         if (classScope.annotationLength === 0) return;
         classScope.currentAnnotationIndex--;
@@ -521,6 +661,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.currentAnnotationObject = classScope.annotations[classScope.currentAnnotationIndex];
         classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.gotoAnnotation = function (index) {
         if (classScope.annotationLength === 0) return;
@@ -540,14 +682,17 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         classScope.api.gotoAnnotation(classScope.currentAnnotationIndex);
 
     };
+
+
+    //--------------------------------------------------------------------------------------------------------------------------
     // key can be a name or an instance id.
     this.getNodeObject = function (key, nodeIndex, currentNodeType) {
      
         var dataObjectRef;
-        classScope.nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
+        var nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
         
         if (typeof key === 'string' || key instanceof String) {            
-            dataObjectRef = classScope.nodeHash[classScope.nodeTypeCurrent][key];
+            dataObjectRef = classScope.nodeHash[nodeTypeCurrent][key];
          
         } else {
             dataObjectRef = classScope.nodeHashIDMap[key];
@@ -575,6 +720,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         
         return dataObjectRef;
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.lookat = function (key, direction,distance, duration,offset, callback) {
         var dataObjectRef = classScope.getNodeObject(key,null,classScope.nodeTypeMatrixtransform);
@@ -612,10 +759,14 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.getVectorMagnitude = function (vector) {
         return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]) + (vector[2] * vector[2]));
 
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.getVectorNormalized = function (vector) {
         var mag = classScope.getVectorMagnitude(vector);
@@ -623,9 +774,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         vector[1] /= mag;
         vector[2] /= mag;
         return vector;
-
-
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.combineVectorDirections = function () {
         var directionCombined = [0,0,0];
@@ -637,6 +788,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return classScope.getVectorNormalized(directionCombined);
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
     
     this.refreshMatrix = function (key) {
         console.log("refreshMatrix called");
@@ -650,21 +802,22 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 }
                 for (var prop in matrices) {
                     console.log(prop + " = " + matrices[prop]);
-                }              
+                }
                 dataObjectRef.localMatrix = matrices.local;
                 dataObjectRef.localMatrixisCached = null;
             }
             console.log("about to call getMatrix");
             classScope.api.getMatrix(dataObjectRef.instanceID, matrixRefreshed);
         }
+    };
 
-    }
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setPosition = function (key, position, duration, easing, callback) {
         if (duration === null || duration === undefined) {
             duration = 1;
         }
-       
+
         var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
         var dataObjectRefSingle;
         if (dataObjectRef !== null && dataObjectRef !== undefined) {
@@ -692,11 +845,10 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             }
 
             classScope.api.translate(dataObjectRefSingle.instanceID, position, { "duration": duration, "easing": easing }, onTranslate);
-            
-
         }
-    }
-  
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------  
 
     this.translate = function (key, direction,distance, duration, easing, callback) {
 
@@ -725,8 +877,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             classScope.api.translate(dataObjectRefSingle.instanceID, newPosition, { "duration": duration, "easing": easing }, callback);
 
         }
-
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.rotateOnAxis = function (key, angle,axis) {
         var dataObjectRef = classScope.getNodeObject(key, null, classScope.nodeTypeMatrixtransform);
@@ -787,13 +940,79 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             out[14] = a[14];
             out[15] = a[15];
         }
-       
-
 
        classScope.api.setMatrix(dataObjectRefSingle.instanceID, out);      
-       //dataObjectRefSingle.localMatrix = out;
+      
     }
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
+    this.setNodeVisibilityAll = function (makeVisible, exclusionList, currentNodeType) {    
+        var useTogglebehaviour = false;
+        if (makeVisible === null) {
+            useTogglebehaviour = true;
+        }
+        var nodeTypeCurrent = currentNodeType || classScope.nodeTypeMatrixtransform;
+        var data = classScope.nodeHash[nodeTypeCurrent];
+        for (var prop in data) {
+            //dont process nodes that are excluded via validateNodeName function
+            if (!sketchfabAPIUtilityInstance.validateNodeName(prop)) continue;
+
+            var isExcluded = false;
+            if(exclusionList !== null && exclusionList !== undefined){
+                for (var i = 0; i < exclusionList.length; i++) {
+                    if (exclusionList[i] == prop) {
+                        //key matchs exlusion data so do not process further
+                        isExcluded = true;
+                        break;
+                    }
+                }
+            }
+            if (isExcluded) {
+                continue;
+            }
+
+            var dataObjectRef = classScope.getNodeObject(prop, null, currentNodeType);
+            if (dataObjectRef !== null && dataObjectRef !== undefined) {              
+
+                //if array
+                if (Array.isArray(dataObjectRef)) {
+                    for (i = 0; i < dataObjectRef.length; i++) {
+
+                        if (useTogglebehaviour) {
+                            dataObjectRef[i].isVisible = !dataObjectRef[i].isVisible
+                            makeVisible = dataObjectRef[i].isVisible;
+                        }
+
+                        dataObjectRef[i].isVisible = makeVisible;
+                        if (makeVisible) {
+                            classScope.api.show(dataObjectRef[i].instanceID);
+                        } else {
+                            classScope.api.hide(dataObjectRef[i].instanceID);
+                        }
+                    }
+                } else {
+                    //not array
+
+                    if (useTogglebehaviour) {
+                        dataObjectRef.isVisible = !dataObjectRef.isVisible
+                        makeVisible = dataObjectRef.isVisible;
+                    }
+
+                    dataObjectRef.isVisible = makeVisible;
+                    if (makeVisible) {
+                        classScope.api.show(dataObjectRef.instanceID);
+                    } else {
+                        classScope.api.hide(dataObjectRef.instanceID);
+                    }
+
+                }
+
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setNodeVisibility = function (key, makeVisible, nodeIndex, currentNodeType) {
         var useTogglebehaviour = false;
@@ -849,9 +1068,13 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.toggleNodeVisibility = function (key, nodeIndex, currentNodeType) {
         classScope.setNodeVisibility(key, null, nodeIndex, currentNodeType);
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.getMaterialObject = function (materialName) {
         var materialObjectRef = classScope.materialHash[materialName];
@@ -863,6 +1086,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return materialObjectRef;
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.getChannelObject = function (materialObjectRef, channelName) {
        
         var channelObjectRef = materialObjectRef.channels[channelName];
@@ -873,25 +1098,32 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         return channelObjectRef;
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.setChannelProperties = function (materialName, channelName, channelObjectDefaults) {
         var materialObjectRef = classScope.getMaterialObject(materialName);
         var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setChannelPropertiesActual(channelObjectRef, channelObjectDefaults);
         classScope.api.setMaterial(materialObjectRef); // call to update material added here , for users to see effects without having to call to update the material themselves
-    }
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setChannelPropertiesActual = function (channelObjectRef, channelObjectDefaults) {
         for (var prop in channelObjectDefaults) {
             channelObjectRef[prop] = channelObjectDefaults[prop];
         }
-    }
+    };
 
-    //-----------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------------------
+    
     this.setTextureProperties = function (materialName, channelName, textureObjectDefaults) {// this function does not update the material , it just sets the new channel values locally , this would then be picked up by some later calls to update material, like with pending material calls for texture handling etc..
         var materialObjectRef = classScope.getMaterialObject(materialName);
         var channelObjectRef = classScope.getChannelObject(materialObjectRef, channelName);
         classScope.setTexturePropertiesActual(channelObjectRef, textureObjectDefaults);
-    }
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setTexturePropertiesActual = function (channelObjectRef, textureObjectDefaults) {
 
@@ -900,8 +1132,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 channelObjectRef.texture[prop] = textureObjectDefaults[prop];
             }
         }
-       
-    }
+    };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.logChannelPropertiesAndValues = function (materialName, channelName) {
 
@@ -912,6 +1145,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         var currentChannel = classScope.getChannelObject(classScope.getMaterialObject(materialName), channelName);
         classScope.logPropertiesAndValuesRecursive("", "", currentChannel);
     }
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.logPropertiesAndValuesRecursive = function(s, space, ob) {
         for (prop in ob) {
@@ -927,7 +1162,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             }
         }
     }
-   
+
+    //--------------------------------------------------------------------------------------------------------------------------   
 
     this.setFactor = function (materialName, channelName, factor, performCacheReset) {
         if (factor === null) {
@@ -965,23 +1201,29 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
 
             }
         }
-
-
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.resetFactor = function (materialName, channelName) {
         classScope.setFactor(materialName, channelName, 0, true);
-
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setOpacity = function (materialName, factor) {
         classScope.setFactor(materialName, classScope.Opacity, factor);
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.resetOpacity = function (materialName) {
         classScope.setFactor(materialName, classScope.Opacity, 0, true);
 
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.resetMaterialUID = function (materialName, channelName) {
 
         var materialObjectRef = classScope.getMaterialObject(materialName);
@@ -994,13 +1236,11 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                     classScope.api.setMaterial(materialObjectRef);
 
                 }
-
             }
-
         }
-
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
     
     this.setMaterialUIDPending = function (materialName, channelName, UIDKey, textureObjectDefaults, channelObjectDefaults) {
 
@@ -1023,6 +1263,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         storage.push(ob);
 
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.applyMaterialUIDPending = function (UIDKey) {
 
         if (UIDKey !== null && UIDKey !== undefined && UIDKey !== "") {
@@ -1120,8 +1363,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 classScope.dispatchEvent(classScope.EVENT_TEXTURE_APPLIED, UIDKey);
             }
         }
-
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.removeTextureFromMaterialChannel = function (materialName,channelName) {
 
@@ -1140,7 +1384,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
-  
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.addTexture = function (url, UIDKey, useCashing) {
         useCashing = useCashing || false;
@@ -1172,12 +1416,15 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
+
     this.resetTexture = function (materialName, channelName) {
 
         classScope.resetMaterialUID(materialName, channelName);
 
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.setColor = function (materialName, channelName, channelPropertyName, hex, performCacheReset) {
         channelPropertyName = channelPropertyName || "color";
@@ -1244,15 +1491,16 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
                 classScope.api.setMaterial(materialObjectRef);
 
             }
-        }       
-
+        } 
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.resetColor = function (materialName,channelName, channelPropertyName) {
         classScope.setColor(materialName, channelName, channelPropertyName, "", true);
-
     };
 
+    //--------------------------------------------------------------------------------------------------------------------------
 
    this.linearToSrgb = function (c) {
         var v = 0.0;
@@ -1263,7 +1511,9 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
             v = 1.055 * Math.pow(c, 1.0 / classScope.gamma) - 0.055;
         }
         return v;
-    };
+   };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
     this.srgbToLinear = function (c) {
         var v = 0.0;
@@ -1275,6 +1525,8 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         }
         return v;
     };
+
+    //--------------------------------------------------------------------------------------------------------------------------
 
 
 
