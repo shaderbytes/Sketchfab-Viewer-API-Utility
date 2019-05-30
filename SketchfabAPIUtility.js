@@ -2,7 +2,7 @@
 
 function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
     var classScope = this;
-    this.version = "3.0.0.2";
+    this.version = "3.0.0.3";
     this.api = null;
     this.client = null;
     this.clientInitObject = {"merge_materials": 0,"graph_optimizer": 0 };//if you want any default init options hard coded just add them here
@@ -956,7 +956,7 @@ function SketchfabAPIUtility(urlIDRef, iframeRef, clientInitObjectRef) {
         var data = classScope.nodeHash[nodeTypeCurrent];
         for (var prop in data) {
             //dont process nodes that are excluded via validateNodeName function
-            if (!sketchfabAPIUtilityInstance.validateNodeName(prop)) continue;
+            if (!classScope.validateNodeName(prop)) continue;
 
             var isExcluded = false;
             if(exclusionList !== null && exclusionList !== undefined){
